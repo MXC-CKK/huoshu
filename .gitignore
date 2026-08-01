@@ -12,6 +12,7 @@ projects/
 *.db
 *.sqlite
 *.sqlite3
+output/
 output/*.json
 output/*.db
 
