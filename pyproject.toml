@@ -27,7 +27,7 @@ dependencies = [
     "matplotlib>=3.9",
     "seaborn>=0.13",
     "pydantic>=2.8",
-    "pypdf>=5.0",
+    "pdfplumber>=0.11",
     "python-dotenv>=1.0",
     "openai>=1.50",
 ]

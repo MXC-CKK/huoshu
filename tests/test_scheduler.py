@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
@@ -180,7 +180,8 @@ class TestInitialSchedule:
     def test_first_review_tomorrow(self) -> None:
         """新学知识点明天复习。"""
         result = initial_schedule()
-        assert result.next_review == date.today() + timedelta(days=1)
+        today = datetime.now(tz=UTC).date()
+        assert result.next_review == today + timedelta(days=1)
         assert result.interval_days == 1
         assert result.review_count == 0
         assert result.mastery_delta == 0.0
