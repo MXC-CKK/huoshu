@@ -1,0 +1,463 @@
+"""Streamlit 学习会话页。
+
+交互式学习会话：
+- 项目选择（bookmap JSON）
+- 图谱导航（当前位置 + breadcrumb + 前置链）
+- Socratic 引导式问答
+- 下钻（drill-down）/ 返回（step-back）
+- 迷航三栏展示（已完成 / 剩余 / 推荐）
+
+用法:
+    streamlit run src/learning_agent/ui/pages_study.py
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+try:
+    import streamlit as st
+except ImportError:
+    st = None
+
+from learning_agent.core.graph import Bookmap
+from learning_agent.ui.study_engine import (
+    StudySession,
+    compute_three_column,
+    generate_socratic_prompt,
+    get_navigation_context,
+    locate_item,
+    translate_mastery,
+    translate_mode,
+)
+
+# ── 常量 ─────────────────────────────────────────────────────────────
+
+BOOKMAP_DIR = Path("/root/projects/learning-agent/bookmap")
+
+if "study_session" not in locals():
+    study_session: StudySession | None = None
+
+
+def main() -> None:
+    """Streamlit 学习会话页入口。"""
+    if st is None:
+        print("Streamlit 未安装。")
+        raise SystemExit(1)
+
+    st.set_page_config(
+        page_title="活书 · 学习会话",
+        page_icon="📖",
+        layout="wide",
+    )
+    st.title("📖 学习会话")
+
+    # ── 初始化 session state ──
+    _init_state()
+
+    # ── 侧边栏: 项目选择 + 三栏状态 ──
+    with st.sidebar:
+        _render_sidebar()
+
+    # ── 主区域 ──
+    if st.session_state.bookmap is None:
+        st.info("👈 请先在侧边栏选择一个图谱文件")
+        return
+
+    bm: Bookmap = st.session_state.bookmap
+    session: StudySession | None = st.session_state.study_session
+
+    if session is None or not session.current_item_id:
+        _render_welcome(bm, session)
+        return
+
+    # ── 活跃会话: 双栏布局 ──
+    col_main, col_ctx = st.columns([3, 1])
+
+    with col_main:
+        _render_main_area(bm, session)
+
+    with col_ctx:
+        _render_context_panel(bm, session)
+
+
+# ── 初始化 ───────────────────────────────────────────────────────────
+
+
+def _init_state() -> None:
+    """初始化 session_state。"""
+    defaults: dict[str, Any] = {
+        "bookmap": None,
+        "study_session": None,
+        "chat_history": [],
+        "selected_item_id": "",
+    }
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
+
+
+# ── 侧边栏 ───────────────────────────────────────────────────────────
+
+
+def _render_sidebar() -> None:
+    """渲染侧边栏：项目选择 + 三栏状态。"""
+    st.header("📂 项目")
+
+    bm = _bookmap_selector()
+    st.session_state.bookmap = bm
+
+    if bm is None:
+        return
+
+    session = st.session_state.study_session
+
+    # 当前会话状态
+    if session and session.current_item_id:
+        item = bm.get_item(session.current_item_id)
+        if item:
+            st.success(f"📍 **{item.title}**")
+            st.caption(f"`{item.id}` · {translate_mode(item.mode)}")
+            if session.main_goal:
+                st.caption(f"🎯 主线: {session.main_goal}")
+            if session.breakdown_stack:
+                st.caption(f"📚 下钻栈: {len(session.breakdown_stack)} 层")
+
+    st.divider()
+
+    # 三栏状态
+    if bm:
+        _render_three_column(bm, session)
+
+
+def _bookmap_selector() -> Bookmap | None:
+    """渲染 bookmap 文件选择器。"""
+    candidates = sorted(
+        p for p in BOOKMAP_DIR.glob("*.json")
+        if not p.name.endswith(".bak") and not p.name.endswith(".bak2")
+    ) if BOOKMAP_DIR.exists() else []
+
+    if not candidates:
+        st.warning("未找到图谱文件")
+        manual = st.text_input("手动输入路径", placeholder="/path/to/bookmap.json")
+        if manual and Path(manual).exists():
+            candidates = [Path(manual)]
+        else:
+            return None
+
+    selected = st.selectbox(
+        "选择图谱",
+        options=[str(c) for c in candidates],
+        format_func=lambda s: Path(s).stem,
+        key="bookmap_selector",
+    )
+
+    if not selected:
+        return None
+
+    try:
+        bm = Bookmap.load(Path(selected))
+        if not bm.is_valid and bm.errors:
+            with st.expander(f"⚠️ {len(bm.errors)} 个校验警告"):
+                for e in bm.errors:
+                    st.text(f"· {e}")
+        return bm
+    except Exception as exc:
+        st.error(f"加载失败: {exc}")
+        return None
+
+
+def _render_three_column(bm: Bookmap, session: StudySession | None) -> None:
+    """渲染三栏：已完成 / 剩余 / 推荐。"""
+    st.header("📊 学习状态")
+
+    current_id = session.current_item_id if session else ""
+    tc = compute_three_column(bm, current_id)
+
+    tabs = st.tabs(["✅ 已完成", "📋 剩余", "⭐ 推荐"])
+
+    with tabs[0]:
+        if tc.completed:
+            for item, note in tc.completed:
+                st.caption(f"· **{item.title}** ({note})")
+        else:
+            st.caption("暂无")
+
+    with tabs[1]:
+        if tc.remaining:
+            for item, reason in tc.remaining:
+                st.caption(f"· **{item.title}** — {reason}")
+        else:
+            st.caption("全部完成！🎉")
+
+    with tabs[2]:
+        if tc.recommended:
+            for item, reason in tc.recommended:
+                if st.button(
+                    f"▶ {item.title}",
+                    help=reason,
+                    key=f"rec_{item.id}",
+                ):
+                    _start_or_resume_session(bm, item.id)
+                    st.rerun()
+        else:
+            st.caption("暂无推荐")
+
+
+# ── 欢迎页 ───────────────────────────────────────────────────────────
+
+
+def _render_welcome(bm: Bookmap, session: StudySession | None) -> None:
+    """渲染新会话欢迎页：设置目标 + 快速开始。"""
+    st.header("开始学习")
+
+    # 三栏预览
+    tc = compute_three_column(bm)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("已完成", len(tc.completed))
+    with col2:
+        st.metric("剩余", len(tc.remaining))
+    with col3:
+        st.metric("推荐", len(tc.recommended))
+
+    st.divider()
+
+    # 设置目标
+    goal = st.text_input(
+        "🎯 本次学习目标（可选）",
+        placeholder="例如：理解大数定律的证明、学完第3章",
+    )
+
+    # 推荐入口
+    st.subheader("⭐ 推荐从这里开始")
+    for item, reason in tc.recommended[:5]:
+        cols = st.columns([3, 1])
+        with cols[0]:
+            st.markdown(f"**{item.title}** — {reason}")
+        with cols[1]:
+            if st.button("开始", key=f"start_{item.id}"):
+                _start_or_resume_session(bm, item.id, goal)
+                st.rerun()
+
+    # 搜索
+    st.divider()
+    st.subheader("🔍 或者直接搜索")
+    query = st.text_input("搜索知识点", placeholder="输入标题或关键词...")
+    if query:
+        matches = locate_item(bm, query)
+        for m in matches:
+            label = f"{m.title} ({m.id})"
+            if st.button(f"▶ {label}", key=f"search_{m.id}"):
+                _start_or_resume_session(bm, m.id, goal)
+                st.rerun()
+
+
+# ── 主区域 ───────────────────────────────────────────────────────────
+
+
+def _render_main_area(bm: Bookmap, session: StudySession) -> None:
+    """渲染主学习区域：当前位置 + 问答。"""
+    item = bm.get_item(session.current_item_id)
+    if item is None:
+        st.error("当前位置不存在")
+        return
+
+    # breadcrumb
+    _render_breadcrumb(bm, session)
+
+    # 知识点卡片
+    with st.container(border=True):
+        st.subheader(f"📌 {item.title}")
+        cols = st.columns(3)
+        with cols[0]:
+            st.caption(f"类型: {item.type}")
+        with cols[1]:
+            st.caption(f"模式: {translate_mode(item.mode)}")
+        with cols[2]:
+            st.caption(f"掌握度: {item.mastery:.0%} ({translate_mastery(item.mastery)})")
+
+        st.caption(f"📖 锚点: {item.source}")
+        if item.note:
+            st.info(f"💡 {item.note}")
+
+    # 操作按钮
+    cols = st.columns(4)
+    with cols[0]:
+        if st.button("⬆ 返回上一层", disabled=not session.breakdown_stack):
+            popped = session.step_back(bm)
+            if popped:
+                st.rerun()
+    with cols[1]:
+        if st.button("❓ 提问"):
+            st.session_state.show_question_input = True
+    with cols[2]:
+        if st.button("📊 看进度"):
+            st.session_state.show_progress = True
+    with cols[3]:
+        if st.button("🏠 回首页"):
+            st.session_state.study_session = None
+            st.rerun()
+
+    # ── 提问区域 ──
+    if st.session_state.get("show_question_input"):
+        _render_question_area(bm, session, item)
+
+    # ── 聊天历史 ──
+    if st.session_state.get("chat_history"):
+        st.divider()
+        st.subheader("💬 会话记录")
+        for msg in st.session_state.chat_history[-10:]:
+            role = "🧑" if msg["role"] == "user" else "🤖"
+            with st.chat_message(role):
+                st.markdown(msg["content"])
+
+
+def _render_question_area(bm: Bookmap, session: StudySession, item: Any) -> None:
+    """渲染问答区域。"""
+    st.divider()
+    st.subheader("💬 提问")
+
+    qtype = st.selectbox(
+        "问题类型",
+        options=["definition", "proof", "relationship", "application", "self_test"],
+        format_func=lambda t: {
+            "definition": "这个定义/定理怎么理解？",
+            "proof": "这个证明是怎么来的？",
+            "relationship": "和其他概念有什么关系？",
+            "application": "有什么用？",
+            "self_test": "考考我",
+        }.get(t, t),
+    )
+
+    # Socratic 提示
+    prompt = generate_socratic_prompt(item, qtype, llm_available=False)
+    st.info(prompt)
+
+    # 回答输入
+    user_answer = st.text_area("你的回答/追问", placeholder="写下你的理解或进一步的问题...")
+
+    cols = st.columns(2)
+    with cols[0]:
+        if st.button("提交") and user_answer:
+            st.session_state.chat_history.append(
+                {"role": "user", "content": user_answer}
+            )
+            # 模板化回复（LLM 不可用时的占位）
+            reply = (
+                f"收到！你提到「{user_answer[:50]}…」\n\n"
+                f"📖 请看教材: {item.source}\n\n"
+                f"要点:" + (f"\n- {item.note}" if item.note else " 请参照上述 Socratic 引导自行思考。") +
+                "\n\n> ⚠️ LLM 不可用，当前为模板化回复。"
+                "完整 Socratic 互动将在配置 LLM 后启用。"
+            )
+            st.session_state.chat_history.append(
+                {"role": "assistant", "content": reply}
+            )
+            st.rerun()
+
+    with cols[1]:
+        if st.button("取消"):
+            st.session_state.show_question_input = False
+            st.rerun()
+
+
+# ── breadcrumb ────────────────────────────────────────────────────────
+
+
+def _render_breadcrumb(bm: Bookmap, session: StudySession) -> None:
+    """渲染导航面包屑。"""
+    parts: list[str] = []
+
+    # 主线目标
+    if session.main_goal:
+        parts.append(f"🎯 {session.main_goal}")
+
+    # 下钻栈
+    for iid, label in session.breakdown_stack:
+        parts.append(f"… → {label}")
+
+    # 当前位置
+    item = bm.get_item(session.current_item_id)
+    if item:
+        parts.append(f"**{item.title}**")
+
+    if parts:
+        st.caption(" > ".join(parts))
+
+
+# ── 上下文面板 ───────────────────────────────────────────────────────
+
+
+def _render_context_panel(bm: Bookmap, session: StudySession) -> None:
+    """渲染右侧上下文面板：前置链 / 相关概念 / 后置依赖。"""
+    if not session.current_item_id:
+        return
+
+    nav = get_navigation_context(bm, session.current_item_id)
+
+    # 前置链
+    st.subheader("📎 前置依赖链")
+    if nav.prereq_chain:
+        for p in nav.prereq_chain:
+            st.caption(f"· {p.title} ({p.mastery:.0%})")
+            if st.button("🔍", key=f"ctx_{p.id}", help=f"跳到 {p.title}"):
+                if session.drill_down(p.id, f"补前置: {p.title}", bm):
+                    st.rerun()
+    else:
+        st.caption("无前置依赖（入口节点）")
+
+    # 相关概念
+    st.divider()
+    st.subheader("🔗 相关概念")
+    if nav.related:
+        for r in nav.related:
+            st.caption(f"· {r.title}")
+    else:
+        st.caption("无相关概念")
+
+    # 后置依赖
+    st.divider()
+    st.subheader("📤 后置依赖")
+    if nav.dependents:
+        for d in nav.dependents:
+            emoji = "✅" if d.status == "learned" else "📖"
+            st.caption(f"{emoji} {d.title}")
+            if st.button("▶", key=f"dep_{d.id}", help=f"学 {d.title}"):
+                if session.drill_down(d.id, f"前进: {d.title}", bm):
+                    st.rerun()
+    else:
+        st.caption("叶子节点")
+
+
+# ── 会话管理 ─────────────────────────────────────────────────────────
+
+
+def _start_or_resume_session(
+    bm: Bookmap,
+    item_id: str,
+    goal: str = "",
+) -> None:
+    """开始或恢复学习会话。
+
+    Args:
+        bm: Bookmap 实例。
+        item_id: 起始知识点 ID。
+        goal: 主线目标。
+    """
+    session = st.session_state.study_session
+    if session is None or session.project_name != bm.domain:
+        session = StudySession(project_name=bm.domain, main_goal=goal)
+    elif goal:
+        session.set_goal(goal)
+
+    session.move_to(item_id, bm)
+    st.session_state.study_session = session
+    st.session_state.chat_history = []
+
+
+# ── standalone ────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    main()
