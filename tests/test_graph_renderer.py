@@ -17,7 +17,6 @@ from learning_agent.ui.graph_renderer import (
     build_node_detail,
 )
 
-
 # ── 测试夹具 ─────────────────────────────────────────────────────────
 
 
@@ -113,14 +112,14 @@ class TestBuildGraph:
         a_node = next(n for n in layout.nodes if n.id == "a")
         assert "4A90D9" in a_node.color or "D9" in a_node.color
         # 蓝色通道应大于红色
-        r, g, b = _parse_hex(a_node.color)
+        r, _, b = _parse_hex(a_node.color)
         assert b > r or a_node.color == "#4A90D9"
 
     def test_blackbox_nodes_are_amber(self, sample_bm: Bookmap) -> None:
         """黑箱节点为琥珀色系。"""
         layout = build_graph(sample_bm)
         c_node = next(n for n in layout.nodes if n.id == "c")
-        r, g, b = _parse_hex(c_node.color)
+        r, g, _ = _parse_hex(c_node.color)
         # 红色和绿色通道应较高（琥珀色特征）
         assert r > 100 and g > 50
 

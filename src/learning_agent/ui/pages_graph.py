@@ -13,6 +13,10 @@
 
 from __future__ import annotations
 
+# ---- Streamlit imports (optional — page usable as module without UI) ----
+import importlib
+import importlib.util
+import os
 from pathlib import Path
 from typing import Any
 
@@ -23,17 +27,41 @@ from learning_agent.ui.graph_renderer import (
     build_node_detail,
 )
 
-# ---- Streamlit imports (optional — page usable as module without UI) ----
-try:
-    import streamlit as st
-    from streamlit_agraph import Config, Edge, Node, agraph
-except ImportError:
-    st = None
-    agraph = None
+st: Any = importlib.import_module("streamlit") if importlib.util.find_spec("streamlit") else None
+agraph: Any = None
+Node: Any = None
+Edge: Any = None
+Config: Any = None
+if st is not None:
+    try:
+        _agraph_mod = importlib.import_module("streamlit_agraph")
+        agraph = _agraph_mod.agraph
+        Node = _agraph_mod.Node
+        Edge = _agraph_mod.Edge
+        Config = _agraph_mod.Config
+    except Exception:  # noqa: BLE001 - 降级：无 agraph 仅影响图谱渲染
+        agraph = None
 
 # ── 常量 ─────────────────────────────────────────────────────────────
 
-BOOKMAP_DIR = Path("/root/projects/learning-agent/bookmap")
+# bookmap 搜索目录：优先环境变量 HUOSHU_BOOKMAP_DIR，其次常见本地目录
+def _default_bookmap_dir() -> Path:
+    """确定默认 bookmap 搜索目录（可被环境变量覆盖）。"""
+    env_dir = os.environ.get("HUOSHU_BOOKMAP_DIR")
+    if env_dir:
+        return Path(env_dir)
+    for candidate in (
+        Path.cwd() / "bookmap",
+        Path.cwd() / "data" / "bookmap",
+        Path.home() / ".huoshu" / "bookmap",
+        Path("/root/projects/learning-agent/bookmap"),  # 开发机默认
+    ):
+        if candidate.exists():
+            return candidate
+    return Path.cwd() / "bookmap"
+
+
+BOOKMAP_DIR = _default_bookmap_dir()
 DEFAULT_GRAPH_HEIGHT = 600
 
 
@@ -56,7 +84,7 @@ def main() -> None:
     # ── 侧边栏 ──
     with st.sidebar:
         st.header("📂 图谱选择")
-        bm, bm_path = _render_file_selector()
+        bm, _bm_path = _render_file_selector()
         if bm is None or st is None:
             st.info("请选择一个 bookmap JSON 文件")
             st.stop()
@@ -178,7 +206,7 @@ def _render_file_selector() -> tuple[Bookmap | None, Path | None]:
                 for err in bm.errors:
                     st.text(f"· {err}")
         return bm, bm_path
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - UI 层需捕获所有加载错误并提示
         st.error(f"加载失败: {exc}")
         return None, None
 
@@ -286,7 +314,10 @@ def _render_detail_panel(bm: Bookmap) -> None:
                 format_func=lambda mid: bm.get_item(mid).title if bm.get_item(mid) else mid,  # type: ignore[union-attr]
                 key="search_select",
             )
-            _show_item_detail(bm, selected_id)
+            if selected_id:
+                _show_item_detail(bm, selected_id)
+            else:
+                st.caption("未选择节点")
         else:
             st.caption("无匹配结果")
     else:

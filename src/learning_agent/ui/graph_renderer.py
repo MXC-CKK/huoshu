@@ -17,7 +17,6 @@ from typing import Any
 
 from learning_agent.core.graph import Bookmap
 
-
 # ── 配色方案 ─────────────────────────────────────────────────────────
 
 

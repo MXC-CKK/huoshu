@@ -66,6 +66,14 @@ strict = true
 warn_return_any = true
 warn_unused_ignores = true
 
+# 第三方库无类型 stub（streamlit-agraph 未提供 py.typed）
+[[tool.mypy.overrides]]
+module = [
+    "streamlit_agraph.*",
+    "chromadb.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
