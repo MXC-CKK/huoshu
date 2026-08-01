@@ -20,9 +20,9 @@ from typing import Any
 
 st: Any = importlib.import_module("streamlit") if importlib.util.find_spec("streamlit") else None
 
-from learning_agent.core.graph import Bookmap  # noqa: E402
-from learning_agent.llm import is_llm_available  # noqa: E402
-from learning_agent.ui.study_engine import (  # noqa: E402
+from learning_agent.core.graph import Bookmap
+from learning_agent.llm import is_llm_available
+from learning_agent.ui.study_engine import (
     StudySession,
     ask_llm,
     compute_three_column,
