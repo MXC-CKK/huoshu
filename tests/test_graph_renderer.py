@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -313,7 +314,7 @@ class TestGraphEdgeDefaults:
 class TestRealBookmapRendering:
     """用真实 bookmap 验证渲染逻辑。"""
 
-    BOOKMAP_DIR = Path("/root/projects/learning-agent/bookmap")
+    BOOKMAP_DIR = Path(os.environ.get("HUOSHU_TEST_BOOKMAP_DIR", "/root/projects/learning-agent/bookmap"))
 
     @pytest.mark.parametrize("filename", [
         "probability.json",
@@ -343,7 +344,7 @@ class TestRealBookmapRendering:
     ])
     def test_node_detail_all_items(self, filename: str) -> None:
         """每个 item 都能生成详情。"""
-        path = Path(f"/root/projects/learning-agent/bookmap/{filename}")
+        path = Path(os.environ.get("HUOSHU_TEST_BOOKMAP_DIR", "/root/projects/learning-agent/bookmap")) / filename
         if not path.exists():
             pytest.skip(f"{path} 不存在")
 

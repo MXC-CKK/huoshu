@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from datetime import date
 from pathlib import Path
@@ -476,7 +477,7 @@ class TestDataClasses:
 class TestRealBookmaps:
     """用 learning-agent 中的真实 bookmap 测试。"""
 
-    BOOKMAP_DIR = Path("/root/projects/learning-agent/bookmap")
+    BOOKMAP_DIR = Path(os.environ.get("HUOSHU_TEST_BOOKMAP_DIR", "/root/projects/learning-agent/bookmap"))
 
     @pytest.mark.parametrize("filename", [
         "probability.json",
