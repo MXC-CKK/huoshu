@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -100,9 +101,10 @@ class TestLLMClient:
     """LLMClient 测试。"""
 
     def test_from_env(self) -> None:
-        """从环境变量创建。"""
+        """从环境变量创建（无配置文件时回退环境变量）。"""
         env = {"LLM_API_KEY": "sk-test", "LLM_PROVIDER": "deepseek"}
-        with patch.dict(os.environ, env, clear=True):
+        with patch.dict(os.environ, env, clear=True), \
+                patch("learning_agent.llm.DEFAULT_CONFIG_PATH", Path("/tmp/nonexistent-huoshu-test/config.json")):
             client = LLMClient.from_env()
             assert client.config.api_key == "sk-test"
 
@@ -264,15 +266,18 @@ class TestIsLLMAvailable:
     """is_llm_available() 测试。"""
 
     def test_no_key(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.dict(os.environ, {}, clear=True), \
+                patch("learning_agent.llm.DEFAULT_CONFIG_PATH", Path("/tmp/nonexistent-huoshu-test/config.json")):
             assert not is_llm_available()
 
     def test_with_key(self) -> None:
-        with patch.dict(os.environ, {"LLM_API_KEY": "sk-test"}, clear=True):
+        with patch.dict(os.environ, {"LLM_API_KEY": "sk-test"}, clear=True), \
+                patch("learning_agent.llm.DEFAULT_CONFIG_PATH", Path("/tmp/nonexistent-huoshu-test/config.json")):
             assert is_llm_available()
 
     def test_ollama(self) -> None:
-        with patch.dict(os.environ, {"LLM_PROVIDER": "ollama"}, clear=True):
+        with patch.dict(os.environ, {"LLM_PROVIDER": "ollama"}, clear=True), \
+                patch("learning_agent.llm.DEFAULT_CONFIG_PATH", Path("/tmp/nonexistent-huoshu-test/config.json")):
             assert is_llm_available()
 
 

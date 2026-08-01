@@ -32,6 +32,32 @@ from learning_agent.llm import (
     LLMConfig,
 )
 
+
+def _bad_base_url_reason(provider: str, base_url: str) -> str:
+    """检查 Base URL 是否与客户端协议不匹配，返回原因（空串=合法）。
+
+    客户端使用 OpenAI 兼容协议（/v1/chat/completions）。
+    若填了 Anthropic 兼容端点（如 …/anthropic）则无法工作。
+    """
+    if not base_url:
+        return "Base URL 不能为空"
+    if provider != "ollama" and "/anthropic" in base_url:
+        return (
+            f"{base_url} 是 Anthropic 兼容端点，本工具使用 OpenAI 兼容协议。\n"
+            f"DeepSeek 请用 https://api.deepseek.com/v1，OpenAI 请用 https://api.openai.com/v1"
+        )
+    if provider == "ollama" and "11434" not in base_url:
+        return f"Ollama 默认地址应为 http://localhost:11434/v1，当前: {base_url}"
+    return ""
+
+
+def _warn_bad_base_url(provider: str, base_url: str) -> None:
+    """在表单下方显示 Base URL 合法性警告（不阻塞输入）。"""
+    reason = _bad_base_url_reason(provider, base_url.strip())
+    if reason:
+        st.warning(f"⚠️ {reason}")
+
+
 # 提供商 → (默认 base_url, 默认 model, 提示文案)
 PROVIDERS: dict[str, dict[str, str]] = {
     "deepseek": {
@@ -126,6 +152,8 @@ def main() -> None:
                 placeholder=default_base,
                 help="API 端点地址。支持自定义中转/代理地址",
             )
+            # URL 合法性提示（防填错端点格式）
+            _warn_bad_base_url(provider, base_url)
 
             # 模型名（跟随当前提供商默认值）
             model = st.text_input(
@@ -162,44 +190,53 @@ def main() -> None:
 
     # ── 保存 ──
     if submitted:
-        cfg = LLMConfig.from_dict({
-            "provider": provider,
-            "api_key": api_key.strip(),
-            "base_url": base_url.strip(),
-            "model": model.strip(),
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-        })
-        # Ollama 不需要 key
-        if provider == "ollama":
-            cfg.api_key = ""
-        path = cfg.save()
-        st.success(f"✅ 配置已保存到 {path}")
-        st.session_state["llm_config"] = cfg.to_dict()
-        st.rerun()
+        # 保存前校验 Base URL
+        bad_url = _bad_base_url_reason(provider, base_url.strip())
+        if bad_url:
+            st.error(f"❌ 无法保存：{bad_url}")
+        else:
+            cfg = LLMConfig.from_dict({
+                "provider": provider,
+                "api_key": api_key.strip(),
+                "base_url": base_url.strip(),
+                "model": model.strip(),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            })
+            # Ollama 不需要 key
+            if provider == "ollama":
+                cfg.api_key = ""
+            path = cfg.save()
+            st.success(f"✅ 配置已保存到 {path}")
+            st.session_state["llm_config"] = cfg.to_dict()
+            st.rerun()
 
     # ── 测试连接 ──
     if test_clicked:
-        test_cfg = LLMConfig.from_dict({
-            "provider": provider,
-            "api_key": api_key.strip(),
-            "base_url": base_url.strip(),
-            "model": model.strip(),
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-        })
-        if provider == "ollama":
-            test_cfg.api_key = ""
-        with st.spinner("正在测试连接..."):
-            try:
-                client = LLMClient(config=test_cfg)
-                reply = client.chat(
-                    [{"role": "user", "content": "你好！请只回复：连接成功"}],
-                    max_tokens=20,
-                )
-                st.success(f"✅ 连接成功！模型回复：{reply[:60]}")
-            except Exception as exc:  # noqa: BLE001 - 连接失败需兜底展示给用户
-                st.error(f"❌ 连接失败：{exc}")
+        bad_url = _bad_base_url_reason(provider, base_url.strip())
+        if bad_url:
+            st.error(f"❌ 无法测试：{bad_url}")
+        else:
+            test_cfg = LLMConfig.from_dict({
+                "provider": provider,
+                "api_key": api_key.strip(),
+                "base_url": base_url.strip(),
+                "model": model.strip(),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            })
+            if provider == "ollama":
+                test_cfg.api_key = ""
+            with st.spinner("正在测试连接..."):
+                try:
+                    client = LLMClient(config=test_cfg)
+                    reply = client.chat(
+                        [{"role": "user", "content": "你好！请只回复：连接成功"}],
+                        max_tokens=20,
+                    )
+                    st.success(f"✅ 连接成功！模型回复：{reply[:60]}")
+                except Exception as exc:  # noqa: BLE001 - 连接失败需兜底展示给用户
+                    st.error(f"❌ 连接失败：{exc}")
 
     # ── 当前状态 ──
     st.divider()
