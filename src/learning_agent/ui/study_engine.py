@@ -686,7 +686,7 @@ def ask_llm(
                 user_question=user_message,
                 chat_history=chat_history,
             )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - LLM 失败降级为模板回复
         logger.warning("LLM 调用失败，降级为模板回复: %s", exc)
 
     # 降级: 模板化

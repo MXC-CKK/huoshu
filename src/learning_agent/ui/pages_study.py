@@ -13,13 +13,12 @@
 
 from __future__ import annotations
 
+import importlib
+import importlib.util
 from pathlib import Path
 from typing import Any
 
-try:
-    import streamlit as st
-except ImportError:
-    st = None
+st: Any = importlib.import_module("streamlit") if importlib.util.find_spec("streamlit") else None
 
 from learning_agent.core.graph import Bookmap
 from learning_agent.llm import is_llm_available
@@ -172,7 +171,7 @@ def _bookmap_selector() -> Bookmap | None:
                 for e in bm.errors:
                     st.text(f"· {e}")
         return bm
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - UI 层兜底
         st.error(f"加载失败: {exc}")
         return None
 
@@ -412,8 +411,7 @@ def _render_context_panel(bm: Bookmap, session: StudySession) -> None:
     if nav.prereq_chain:
         for p in nav.prereq_chain:
             st.caption(f"· {p.title} ({p.mastery:.0%})")
-            if st.button("🔍", key=f"ctx_{p.id}", help=f"跳到 {p.title}"):
-                if session.drill_down(p.id, f"补前置: {p.title}", bm):
+            if st.button("🔍", key=f"ctx_{p.id}", help=f"跳到 {p.title}") and session.drill_down(p.id, f"补前置: {p.title}", bm):
                     st.rerun()
     else:
         st.caption("无前置依赖（入口节点）")
@@ -434,8 +432,7 @@ def _render_context_panel(bm: Bookmap, session: StudySession) -> None:
         for d in nav.dependents:
             emoji = "✅" if d.status == "learned" else "📖"
             st.caption(f"{emoji} {d.title}")
-            if st.button("▶", key=f"dep_{d.id}", help=f"学 {d.title}"):
-                if session.drill_down(d.id, f"前进: {d.title}", bm):
+            if st.button("▶", key=f"dep_{d.id}", help=f"学 {d.title}") and session.drill_down(d.id, f"前进: {d.title}", bm):
                     st.rerun()
     else:
         st.caption("叶子节点")

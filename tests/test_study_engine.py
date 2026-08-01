@@ -335,8 +335,8 @@ class TestThreeColumn:
         """返回 ThreeColumn 实例。"""
         tc = compute_three_column(sample_bm)
         assert isinstance(tc, ThreeColumn)
-        assert tc.completed or True  # may be empty
-        assert tc.remaining or True
+        assert tc.completed  # may be empty
+        assert tc.remaining
 
     def test_completed_items_are_learned(self, sample_bm: Bookmap) -> None:
         """已完成栏只包含 status='learned' 的 items。"""

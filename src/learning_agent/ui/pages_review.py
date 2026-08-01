@@ -12,13 +12,12 @@
 
 from __future__ import annotations
 
+import importlib
+import importlib.util
 from pathlib import Path
 from typing import Any
 
-try:
-    import streamlit as st
-except ImportError:
-    st = None
+st: Any = importlib.import_module("streamlit") if importlib.util.find_spec("streamlit") else None
 
 from learning_agent.core.graph import Bookmap
 from learning_agent.ui.review_engine import (
@@ -170,7 +169,7 @@ def _bookmap_selector() -> Bookmap | None:
 
     try:
         return Bookmap.load(Path(selected))
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - UI 层兜底
         st.error(f"加载失败: {exc}")
         return None
 
