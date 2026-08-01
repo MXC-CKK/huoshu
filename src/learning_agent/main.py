@@ -5,15 +5,16 @@
 用法:
     huoshu                        # 安装后直接运行（默认 8501 端口）
     huoshu --server.port 8600     # 指定端口
+    python -m learning_agent.main # 等效
     streamlit run src/learning_agent/main.py
 """
 
 from __future__ import annotations
 
-# ---- Streamlit 导入（缺失时降级，保证 CLI --version 等可用）----
 import importlib
 import importlib.util
 import sys
+from pathlib import Path
 from typing import Any
 
 if importlib.util.find_spec("streamlit"):
@@ -22,8 +23,11 @@ else:  # pragma: no cover - 未安装 UI 依赖时的降级
     st = None  # type: ignore[assignment]
 
 
-def _build_app() -> Any:
-    """构建带侧边栏导航的多页面应用。"""
+def _build_app() -> None:
+    """构建带侧边栏导航的多页面应用。
+
+    仅在 Streamlit runtime 已就绪时调用（bootstrap 重执行场景）。
+    """
     from learning_agent.ui.pages_graph import main as graph_main
     from learning_agent.ui.pages_review import main as review_main
     from learning_agent.ui.pages_study import main as study_main
@@ -41,21 +45,32 @@ def _build_app() -> Any:
         st.Page(review_main, title="间隔复习", icon="🔁"),
     ]
 
-    nav = st.navigation(pages)
-    nav.run()
+    st.navigation(pages).run()
 
 
 def main() -> None:
     """Console script 入口：代理到 Streamlit CLI。
 
-    说明：`huoshu` 安装后是 console script，直接调用 main() 不会启动
-    Web 服务器。这里通过 streamlit.web.cli 以 main.py 为脚本启动。
+    说明：`huoshu` 安装后是 console script（learning_agent.main:main），
+    直接构建页面会缺少 Streamlit Runtime。这里把启动代理给
+    `streamlit run <main.py>`，由 bootstrap 重新执行本文件。
     """
     import streamlit.web.cli as st_cli
 
-    sys.argv = ["streamlit", "run", __file__, *sys.argv[1:]]
+    script = str(Path(__file__).resolve())
+    sys.argv = ["streamlit", "run", script, *sys.argv[1:]]
     st_cli.main()
 
 
 if __name__ == "__main__":
-    main()
+    # 两种进入方式：
+    # 1) python main.py / console script 代理：bootstrap 重执行本文件时，
+    #    __name__ == "__main__" 且 Runtime 已存在 → 直接构建应用。
+    # 2) streamlit run main.py：同样 Runtime 已存在 → 直接构建应用。
+    # 反之（无 Runtime）→ 代理到 streamlit CLI。
+    from streamlit.runtime import exists as _runtime_exists
+
+    if _runtime_exists():
+        _build_app()
+    else:
+        main()
