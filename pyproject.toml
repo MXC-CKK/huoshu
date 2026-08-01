@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "learning-agent"
+version = "0.1.0"
+description = "活书 huoshu — 知识图谱 × 自适应学习 × RAG × 复习闭环"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [{ name = "KK", email = "kk@example.com" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "streamlit>=1.35",
+    "streamlit-agraph>=0.0.45",
+    "chromadb>=0.5",
+    "ollama>=0.4",
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "plotly>=5.22",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "pydantic>=2.8",
+    "pypdf>=5.0",
+    "python-dotenv>=1.0",
+    "openai>=1.50",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "black>=24.8",
+    "isort>=5.13",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[project.scripts]
+huoshu = "learning_agent.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = ["-v", "--tb=short", "--strict-markers"]
