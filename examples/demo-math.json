@@ -1,0 +1,87 @@
+{
+ "meta": {
+  "source": "示例 · 基础数学概念",
+  "source_files": [],
+  "built": "2026-08-02",
+  "status": "active",
+  "extraction_method": "手编示例图谱，用于功能演示和测试"
+ },
+ "domain": "基础数学",
+ "clusters": {
+  "c01": {
+   "title": "§1 概率基础",
+   "learned": false
+  },
+  "c02": {
+   "title": "§2 极限定理",
+   "learned": false
+  }
+ },
+ "items": [
+  {
+   "id": "demo-1-1",
+   "cluster": "c01",
+   "title": "概率公理",
+   "type": "definition",
+   "mode": "whitebox",
+   "source": "§1.1 概率空间与公理",
+   "note": "概率三公理是所有后续推导的根",
+   "mastery": 0.7,
+   "next_review": "2026-08-09",
+   "status": "learned"
+  },
+  {
+   "id": "demo-1-2",
+   "cluster": "c01",
+   "title": "随机变量",
+   "type": "concept",
+   "mode": "whitebox",
+   "prerequisites": ["demo-1-1"],
+   "source": "§1.2 随机变量与分布",
+   "note": "将随机事件映射到数值，分离散/连续",
+   "mastery": 0.5,
+   "next_review": "2026-08-05",
+   "status": "learned"
+  },
+  {
+   "id": "demo-1-3",
+   "cluster": "c01",
+   "title": "期望与方差",
+   "type": "method",
+   "mode": "blackbox",
+   "prerequisites": ["demo-1-2"],
+   "source": "§1.3 数字特征",
+   "note": "期望=加权平均，方差=偏离程度；记住计算公式",
+   "mastery": 0.2,
+   "next_review": "2026-08-02",
+   "status": "learned"
+  },
+  {
+   "id": "demo-2-1",
+   "cluster": "c02",
+   "title": "大数定律",
+   "type": "theorem",
+   "mode": "whitebox",
+   "prerequisites": ["demo-1-2", "demo-1-3"],
+   "source": "§2.1 大数定律及证明",
+   "note": "样本均值依概率收敛到期望；理解证明需要 Chebyshev",
+   "mastery": 0.35,
+   "next_review": "2026-08-02",
+   "status": "learned"
+  },
+  {
+   "id": "demo-2-2",
+   "cluster": "c02",
+   "title": "中心极限定理",
+   "type": "theorem",
+   "mode": "whitebox",
+   "prerequisites": ["demo-2-1"],
+   "related": ["demo-1-3"],
+   "source": "§2.2 中心极限定理",
+   "note": "标准化样本均值趋近标准正态分布；应用中最重要的是 Lindeberg 条件",
+   "mastery": 0.15,
+   "next_review": "2026-08-02",
+   "status": "learned"
+  }
+ ]
+}

@@ -19,8 +19,8 @@ from typing import Any
 
 st: Any = importlib.import_module("streamlit") if importlib.util.find_spec("streamlit") else None
 
-from learning_agent.core.graph import Bookmap
-from learning_agent.ui.review_engine import (
+from learning_agent.core.graph import Bookmap  # noqa: E402
+from learning_agent.ui.review_engine import (  # noqa: E402
     MAX_ITEMS_PER_SESSION,
     ReviewEngine,
     ReviewQuestion,
