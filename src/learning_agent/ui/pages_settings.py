@@ -180,6 +180,12 @@ def main() -> None:
                     value=int(current.max_tokens),
                     step=128,
                 )
+                proxy = st.text_input(
+                    "代理（Proxy，可选）",
+                    value=current.proxy,
+                    placeholder="http://127.0.0.1:7890",
+                    help="网络无法直连 API 时填写代理地址（如公司代理/科学上网）。留空则使用系统默认网络",
+                )
 
         st.divider()
         col_save, col_test, _ = st.columns([1, 1, 2])
@@ -202,6 +208,7 @@ def main() -> None:
                 "model": model.strip(),
                 "temperature": temperature,
                 "max_tokens": max_tokens,
+                "proxy": proxy.strip(),
             })
             # Ollama 不需要 key
             if provider == "ollama":
@@ -224,6 +231,7 @@ def main() -> None:
                 "model": model.strip(),
                 "temperature": temperature,
                 "max_tokens": max_tokens,
+                "proxy": proxy.strip(),
             })
             if provider == "ollama":
                 test_cfg.api_key = ""

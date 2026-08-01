@@ -64,6 +64,7 @@ class LLMConfig:
     model: str = DEFAULT_DEEPSEEK_MODEL
     temperature: float = 0.7
     max_tokens: int = 1024
+    proxy: str = ""
 
     @classmethod
     def from_env(cls) -> LLMConfig:
@@ -82,6 +83,7 @@ class LLMConfig:
         api_key = os.getenv("LLM_API_KEY", "")
         base_url = os.getenv("LLM_BASE_URL", "")
         model = os.getenv("LLM_MODEL", "")
+        proxy = os.getenv("LLM_PROXY", "")
 
         # 按 provider 补默认值
         if not base_url:
@@ -118,6 +120,7 @@ class LLMConfig:
             api_key=api_key,
             base_url=base_url,
             model=model,
+            proxy=proxy,
         )
 
     # ── 配置文件支持（UI 设置页持久化）──
@@ -170,6 +173,7 @@ class LLMConfig:
             model=model,
             temperature=float(data.get("temperature", 0.7)),
             max_tokens=int(data.get("max_tokens", 1024)),
+            proxy=str(data.get("proxy", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -181,6 +185,7 @@ class LLMConfig:
             "model": self.model,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
+            "proxy": self.proxy,
         }
 
     def save(self, path: Path | None = None) -> Path:
@@ -296,6 +301,11 @@ class LLMClient:
         client = openai.OpenAI(
             api_key=self.config.api_key or "ollama",  # ollama 不需要真实 key
             base_url=self.config.base_url,
+            http_client=(
+                openai.DefaultHttpxClient(proxy=self.config.proxy)
+                if self.config.proxy
+                else None
+            ),
         )
 
         try:
