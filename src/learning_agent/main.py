@@ -30,6 +30,7 @@ def _build_app() -> None:
     """
     from learning_agent.ui.pages_graph import main as graph_main
     from learning_agent.ui.pages_review import main as review_main
+    from learning_agent.ui.pages_settings import main as settings_main
     from learning_agent.ui.pages_study import main as study_main
 
     st.set_page_config(
@@ -43,6 +44,7 @@ def _build_app() -> None:
         st.Page(graph_main, title="知识图谱", icon="📊", url_path="graph", default=True),
         st.Page(study_main, title="学习会话", icon="📖", url_path="study"),
         st.Page(review_main, title="间隔复习", icon="🔁", url_path="review"),
+        st.Page(settings_main, title="模型设置", icon="⚙️", url_path="settings"),
     ]
 
     st.navigation(pages).run()
