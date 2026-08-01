@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from learning_agent.core.graph import Bookmap, Item
@@ -95,7 +95,7 @@ class StudySession:
     breakdown_stack: list[tuple[str, str]] = field(default_factory=list)
     items_covered: set[str] = field(default_factory=set)
     items_mastery_delta: dict[str, float] = field(default_factory=dict)
-    started_at: str = field(default_factory=lambda: datetime.now(tz=timezone.utc).isoformat())
+    started_at: str = field(default_factory=lambda: datetime.now(tz=UTC).isoformat())
     notes: list[str] = field(default_factory=list)
 
     def set_goal(self, goal: str) -> None:
@@ -638,3 +638,64 @@ def _llm_instruction(qtype: str, item: Item) -> str:
         ),
     }
     return instructions.get(qtype, instructions["definition"])
+
+
+# ── LLM 对话接口 ─────────────────────────────────────────────────────
+
+
+def ask_llm(
+    bm: Bookmap,
+    item_id: str,
+    qtype: str,
+    user_message: str,
+    *,
+    chat_history: list[dict[str, str]] | None = None,
+) -> str:
+    """向 LLM 发起 Socratic 教学对话（含图谱上下文）。
+
+    LLM 可用时：调用 llm.LLMClient.socratic_teach()，返回模型回复。
+    LLM 不可用时：返回模板化降级回复。
+
+    Args:
+        bm: Bookmap 实例。
+        item_id: 当前知识点 ID。
+        qtype: 问题类型。
+        user_message: 用户输入。
+        chat_history: 之前的对话历史。
+
+    Returns:
+        模型回复或降级模板文本。
+    """
+    item = bm.get_item(item_id)
+    if item is None:
+        return f"知识点 '{item_id}' 不存在。"
+
+    # 构建 LLM 上下文
+    ctx = build_llm_context(bm, item_id, qtype)
+    if "error" in ctx:
+        return str(ctx["error"])
+
+    # 尝试调用真实 LLM
+    try:
+        from learning_agent.llm import LLMClient
+
+        client = LLMClient.from_env()
+        if client.available:
+            return client.socratic_teach(
+                item_context=ctx,
+                user_question=user_message,
+                chat_history=chat_history,
+            )
+    except Exception as exc:
+        logger.warning("LLM 调用失败，降级为模板回复: %s", exc)
+
+    # 降级: 模板化
+    mode_note = "（记住公式会用即可）" if item.mode == "blackbox" else ""
+    return (
+        f"收到！关于 **{item.title}**：\n\n"
+        f"📖 教材锚点: {item.source}\n\n"
+        f"{'💡 要点: ' + item.note if item.note else '请参照 Socratic 引导自行思考。'}\n"
+        f"{mode_note}\n\n"
+        f"> ⚠️ LLM 不可用，当前为模板化回复。\n"
+        f"> 设置 LLM_PROVIDER 和 LLM_API_KEY 环境变量以启用 AI 教学。"
+    )

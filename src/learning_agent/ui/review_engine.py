@@ -20,10 +20,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from learning_agent.core.graph import Bookmap, Item
-from learning_agent.core.scheduler import compute_next_review
+from learning_agent.core.mastery import update_mastery
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,38 @@ def _mastery_to_difficulty(mastery: float) -> str:
         return DIFFICULTY_UNDERSTANDING
     else:
         return DIFFICULTY_APPLICATION
+
+
+def _compute_review_date(score: float, new_mastery: float) -> date:
+    """根据答题结果和掌握度计算下次复习日期（SM-2 规则）。
+
+    分离自 scheduler.compute_next_review：mastery 由 IRT 2PL 模型更新，
+    间隔由这里的 SM-2 规则单独计算。
+
+    Args:
+        score: 答题得分（1.0/0.5/0.0）。
+        new_mastery: 更新后的掌握度。
+
+    Returns:
+        下次复习日期。
+    """
+    today = datetime.now(tz=UTC).date()
+
+    if score < 0.4:
+        # 答错 → 明天回炉
+        return today + timedelta(days=1)
+    elif score < 0.8:
+        # 部分对 → 3 天
+        return today + timedelta(days=3)
+    elif new_mastery > 0.85:
+        # 稳固 → 14 天
+        return today + timedelta(days=14)
+    elif new_mastery > 0.7:
+        # 中等 → 7 天
+        return today + timedelta(days=7)
+    else:
+        # 低 mastery 但答对了 → 3 天
+        return today + timedelta(days=3)
 
 
 # ── 数据类 ───────────────────────────────────────────────────────────
@@ -237,22 +269,27 @@ class ReviewEngine:
         score = _score_answer(user_answer, question.expected_keywords, item)
         feedback = _generate_feedback(score, item, user_answer)
 
-        # 使用 scheduler 更新
-        schedule_result = compute_next_review(
-            current_mastery=mastery_before,
+        # 使用 core/mastery 的 2PL 模型更新掌握度（含 hypercorrection）
+        mastery_result = update_mastery(
+            mastery=mastery_before,
             outcome=score,
+            mode=item.mode,
         )
+        new_mastery = mastery_result.new_mastery
+
+        # mastery 更新（IRT 2PL）和间隔调度（SM-2）分离
+        next_review_date = _compute_review_date(score, new_mastery)
 
         # 写回 item
-        item.mastery = schedule_result.new_mastery
-        item.next_review = schedule_result.next_review.isoformat()
+        item.mastery = new_mastery
+        item.next_review = next_review_date.isoformat()
 
         result = ReviewResult(
             question=question,
             user_answer=user_answer,
             score=score,
             mastery_before=mastery_before,
-            mastery_after=schedule_result.new_mastery,
+            mastery_after=new_mastery,
             feedback=feedback,
             next_review=item.next_review,
         )

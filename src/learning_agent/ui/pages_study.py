@@ -22,8 +22,10 @@ except ImportError:
     st = None
 
 from learning_agent.core.graph import Bookmap
+from learning_agent.llm import is_llm_available
 from learning_agent.ui.study_engine import (
     StudySession,
+    ask_llm,
     compute_three_column,
     generate_socratic_prompt,
     get_navigation_context,
@@ -102,7 +104,7 @@ def _init_state() -> None:
 
 
 def _render_sidebar() -> None:
-    """渲染侧边栏：项目选择 + 三栏状态。"""
+    """渲染侧边栏：项目选择 + LLM 状态 + 三栏状态。"""
     st.header("📂 项目")
 
     bm = _bookmap_selector()
@@ -110,6 +112,13 @@ def _render_sidebar() -> None:
 
     if bm is None:
         return
+
+    # LLM 状态
+    llm_ok = is_llm_available()
+    if llm_ok:
+        st.success("🤖 LLM 已就绪")
+    else:
+        st.warning("⚠️ LLM 未配置 (设置 LLM_API_KEY)")
 
     session = st.session_state.study_session
 
@@ -344,13 +353,14 @@ def _render_question_area(bm: Bookmap, session: StudySession, item: Any) -> None
             st.session_state.chat_history.append(
                 {"role": "user", "content": user_answer}
             )
-            # 模板化回复（LLM 不可用时的占位）
-            reply = (
-                f"收到！你提到「{user_answer[:50]}…」\n\n"
-                f"📖 请看教材: {item.source}\n\n"
-                f"要点:" + (f"\n- {item.note}" if item.note else " 请参照上述 Socratic 引导自行思考。") +
-                "\n\n> ⚠️ LLM 不可用，当前为模板化回复。"
-                "完整 Socratic 互动将在配置 LLM 后启用。"
+
+            # 调用 LLM（或降级模板）
+            reply = ask_llm(
+                bm=bm,
+                item_id=session.current_item_id,
+                qtype=qtype,
+                user_message=user_answer,
+                chat_history=st.session_state.chat_history[:-1] if len(st.session_state.chat_history) > 1 else None,
             )
             st.session_state.chat_history.append(
                 {"role": "assistant", "content": reply}
