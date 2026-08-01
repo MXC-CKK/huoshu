@@ -98,6 +98,21 @@ class LLMConfig:
                 "ollama": DEFAULT_OLLAMA_MODEL,
             }.get(provider, DEFAULT_DEEPSEEK_MODEL)
 
+        # 防护：环境变量可能残留其他 provider 的值（如 LLM_MODEL=ollama/...）
+        # 当 provider 与 model/base_url 不匹配时，忽略环境变量用默认值
+        if provider != "ollama" and model.startswith("ollama"):
+            logger.warning(
+                "LLM_MODEL='%s' 与 provider='%s' 不匹配，忽略环境变量",
+                model, provider,
+            )
+            model = DEFAULT_DEEPSEEK_MODEL if provider == "deepseek" else DEFAULT_OPENAI_MODEL
+        if provider != "ollama" and "localhost:11434" in base_url:
+            logger.warning(
+                "LLM_BASE_URL='%s' 与 provider='%s' 不匹配，忽略环境变量",
+                base_url, provider,
+            )
+            base_url = DEFAULT_DEEPSEEK_BASE if provider == "deepseek" else DEFAULT_OPENAI_BASE
+
         return cls(
             provider=provider,
             api_key=api_key,

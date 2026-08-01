@@ -96,29 +96,41 @@ def main() -> None:
         with col2:
             st.subheader("🔑 连接配置")
 
-            # API Key（密码框，回填当前值）
+            # 当前选中 provider 的推荐值（跟随 radio 选择）
+            default_base = PROVIDERS[provider]["base_url"]
+            default_model = PROVIDERS[provider]["model"]
+            # 配置文件中的值（如有）——仅在 provider 匹配时回填
+            file_cfg_now = LLMConfig.from_file()
+            if file_cfg_now is not None and file_cfg_now.provider == provider:
+                suggested_base = file_cfg_now.base_url or default_base
+                suggested_model = file_cfg_now.model or default_model
+                suggested_key = file_cfg_now.api_key
+            else:
+                suggested_base = default_base
+                suggested_model = default_model
+                suggested_key = ""
+
+            # API Key（密码框）
             api_key = st.text_input(
                 "API Key",
                 type="password",
-                value=current.api_key if current.provider == provider else "",
+                value=suggested_key,
                 placeholder=PROVIDERS[provider]["api_key_hint"],
                 help="密钥只保存在本机 ~/.huoshu/config.json（权限 600），不会上传或提交",
             )
 
-            # Base URL（默认按提供商自动补全）
-            default_base = PROVIDERS[provider]["base_url"]
+            # Base URL（跟随当前提供商默认值）
             base_url = st.text_input(
                 "Base URL",
-                value=current.base_url if current.provider == provider else default_base,
+                value=suggested_base,
                 placeholder=default_base,
                 help="API 端点地址。支持自定义中转/代理地址",
             )
 
-            # 模型名
-            default_model = PROVIDERS[provider]["model"]
+            # 模型名（跟随当前提供商默认值）
             model = st.text_input(
                 "模型名",
-                value=current.model if current.provider == provider else default_model,
+                value=suggested_model,
                 placeholder=default_model,
                 help="如 deepseek-chat / gpt-4o-mini / llama3.2（Ollama 需先 pull）",
             )
