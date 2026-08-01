@@ -1,9 +1,14 @@
-# 活书 huoshu
+# 活书 huoshu 📚
 
-> 知识图谱 × 自适应学习 × RAG × 间隔复习 — 开源自主学习工具
+> **把教材变成可交互知识图谱的自学工具** — Knowledge Graph × Adaptive Learning × RAG × Spaced Repetition
+>
+> 中文名「活书」：教材不再是线性翻页，而是可导航、可追问、可复习的活的知识网络。
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/learning-agent.svg)](https://pypi.org/project/learning-agent/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/learning-agent.svg)](https://pypi.org/project/learning-agent/)
+[![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
 [![Tests](https://img.shields.io/badge/tests-275%20passed-brightgreen.svg)](tests/)
 
 ---
