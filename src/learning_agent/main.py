@@ -40,9 +40,9 @@ def _build_app() -> None:
     )
 
     pages: list[Any] = [
-        st.Page(graph_main, title="知识图谱", icon="📊", default=True),
-        st.Page(study_main, title="学习会话", icon="📖"),
-        st.Page(review_main, title="间隔复习", icon="🔁"),
+        st.Page(graph_main, title="知识图谱", icon="📊", url_path="graph", default=True),
+        st.Page(study_main, title="学习会话", icon="📖", url_path="study"),
+        st.Page(review_main, title="间隔复习", icon="🔁", url_path="review"),
     ]
 
     st.navigation(pages).run()
