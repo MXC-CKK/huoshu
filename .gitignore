@@ -43,3 +43,6 @@ htmlcov/
 # MCP / tools
 .claude/
 .claude-code/
+
+# 开发机本地 symlink（不公开）
+.shared
