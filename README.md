@@ -73,7 +73,7 @@ huoshu/
 ### 安装
 
 ```bash
-git clone https://github.com/user/huoshu.git
+git clone https://github.com/MXC-CKK/huoshu.git
 cd huoshu
 pip install -e .
 ```
@@ -124,7 +124,7 @@ pytest tests/ -v
 
 ### 1. 准备图谱文件
 
-按照 [bookmap-schema.json](https://github.com/user/huoshu/blob/main/framework/bookmap-schema.json) 格式创建知识图谱 JSON，或使用 `examples/demo-math.json` 快速体验。
+按照 [bookmap-schema.json](https://github.com/MXC-CKK/huoshu/blob/main/framework/bookmap-schema.json) 格式创建知识图谱 JSON，或使用 `examples/demo-math.json` 快速体验。
 
 ### 2. 图谱浏览
 
@@ -179,4 +179,4 @@ MIT License — 详见 [LICENSE](LICENSE)。
 ## 🙏 致谢
 
 - 参考设计：[benkyo](https://github.com/youseiushida/benkyo)（MIT）
-- 图谱格式受 [learning-agent](https://github.com/user/learning-agent) 启发
+- 图谱格式受 [learning-agent](https://github.com/MXC-CKK/learning-agent) 启发

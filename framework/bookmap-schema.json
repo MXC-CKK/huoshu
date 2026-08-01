@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bookmap Schema（通用知识图谱数据模型）",
+  "description": "任何书籍/课程材料 → 可导航知识图谱的统一格式。学习 Agent 的所有能力（调度、补缺、复习、迷航处理）都建立在此模型之上，与具体学科无关。",
+  "type": "object",
+  "required": ["meta", "domain", "clusters", "items"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "图谱元信息",
+      "required": ["source", "built", "status"],
+      "properties": {
+        "source": {"type": "string", "description": "内容来源（书名/课程名）"},
+        "source_files": {"type": "array", "items": {"type": "string"}, "description": "原始材料路径（书籍 PDF、笔记）"},
+        "built": {"type": "string", "format": "date"},
+        "status": {"type": "string", "enum": ["draft-待校对", "active", "archived"], "description": "draft-待校对: 抽取完成待用户校对；active: 校对通过可导航"},
+        "extraction_method": {"type": "string", "description": "抽取方法（默认：四层分解 + 原子性三标准）"}
+      }
+    },
+    "domain": {"type": "string", "description": "学科领域，如 'Advanced Econometrics'、'Machine Learning'"},
+    "clusters": {
+      "type": "object",
+      "description": "章节/主题簇：id → {title, learned, learned_date}",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": {"type": "string"},
+          "learned": {"type": "boolean", "description": "用户是否已学完该簇"},
+          "learned_date": {"type": "string", "format": "date"},
+          "parent": {"type": "string", "description": "上级簇 id（支持多级）"}
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "description": "原子知识点（满足 Atomic/Assessable/Meaningful 三标准）",
+      "items": {
+        "type": "object",
+        "required": ["id", "cluster", "title", "type", "mode", "source"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9-]+$", "description": "全局唯一 id，如 'ch5-4-1'"},
+          "cluster": {"type": "string", "description": "所属簇 id"},
+          "title": {"type": "string", "description": "知识点标题（含定理/定义编号）"},
+          "type": {"type": "string", "enum": ["definition", "concept", "theorem", "method", "example", "application", "section", "exercise"], "description": "definition: 定义；concept: 概念/机制；theorem: 定理及证明；method: 方法/算法；example: 例子；application: 应用；section: 章节占位；exercise: 习题"},
+          "mode": {"type": "string", "enum": ["blackbox", "whitebox"], "description": "blackbox(黑箱/工具): 公式记住会用即可；whitebox(白箱/深究): 深入理解（讲证明动机、出变式题）。对外表述用自然语言（见 learn-session 术语翻译规则）"},
+          "prerequisites": {"type": "array", "items": {"type": "string"}, "description": "前置依赖 item id 列表（学习顺序约束）"},
+          "related": {"type": "array", "items": {"type": "string"}, "description": "相关概念 item id（类比/对比/横纵联系，非依赖）"},
+          "source": {"type": "string", "description": "教材锚点：章/节/页码/定理号（防幻觉的根）"},
+          "note": {"type": "string", "description": "一句话要点（助记）"},
+          "mastery": {"type": "number", "minimum": 0, "maximum": 1, "description": "掌握度（简化 IRT，0-1），由复习测试校准"},
+          "next_review": {"type": ["string", "null"], "format": "date", "description": "下次复习日期（null=未安排）"},
+          "status": {"type": "string", "enum": ["learned", "pending", "optional"], "description": "pending: 待学/待教材确认；optional: 选学"},
+          "cross_refs": {"type": "array", "description": "跨项目引用（另一本书中的同一概念/前置/对照）", "items": {"type": "object", "required": ["project", "item", "relation"], "properties": {"project": {"type": "string", "description": "目标项目名（bookmap 文件名）"}, "item": {"type": "string", "description": "目标 item id"}, "relation": {"type": "string", "enum": ["same", "prerequisite", "contrast", "extension"], "description": "same: 同一概念不同表述；prerequisite: 另一本书中的前置；contrast: 对照/易混；extension: 延伸"}}}}
+        }
+      }
+    }
+  }
+}

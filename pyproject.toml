@@ -9,7 +9,7 @@ description = "活书 huoshu — 知识图谱 × 自适应学习 × RAG × 复�
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
-authors = [{ name = "KK", email = "kk@example.com" }]
+authors = [{ name = "KK", email = "2754994894@qq.com" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
