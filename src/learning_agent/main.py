@@ -10,12 +10,11 @@
 
 from __future__ import annotations
 
-import sys
-from typing import Any
-
 # ---- Streamlit 导入（缺失时降级，保证 CLI --version 等可用）----
 import importlib
 import importlib.util
+import sys
+from typing import Any
 
 if importlib.util.find_spec("streamlit"):
     import streamlit as st
