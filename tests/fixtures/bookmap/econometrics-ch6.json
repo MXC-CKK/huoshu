@@ -1,0 +1,235 @@
+{
+ "meta": {
+  "book": "高级计量经济学课件 Ch6 (Hong 2024): Linear Regression Models Under Conditional Heteroskedasticity and Autocorrelation",
+  "source_files": [
+   "content/books/econometrics/高计_Ch6_2024.pdf"
+  ],
+  "built": "2026-07-31",
+  "status": "active",
+  "level": "骨架级（考试导向，学完 Ch5 §5.7/5.8 后按需展开）"
+ },
+ "domain": "Advanced Econometrics",
+ "clusters": {
+  "c61": {
+   "title": "§6.1 Motivation",
+   "learned": false
+  },
+  "c62": {
+   "title": "§6.2 Framework and Assumptions",
+   "learned": false
+  },
+  "c63": {
+   "title": "§6.3 Long-Run Variance-Covariance Matrix Estimation",
+   "learned": false
+  },
+  "c64": {
+   "title": "§6.4 Consistency of the OLS Estimator",
+   "learned": false
+  },
+  "c65": {
+   "title": "§6.5 Asymptotic Normality of the OLS Estimator",
+   "learned": false
+  },
+  "c66": {
+   "title": "§6.6 Hypothesis Testing",
+   "learned": false
+  },
+  "c67": {
+   "title": "§6.7 Cochrane-Orcutt Procedure",
+   "learned": false
+  }
+ },
+ "items": [
+  {
+   "id": "ch6-1-1",
+   "cluster": "c61",
+   "title": "动机：序列相关 ⇒ 非 MDS ⇒ 三明治失效",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "ε_t 序列相关时 {X_tε_t} 非 MDS，V=E(X_tX_t'ε_t²) 公式失效，需要长期方差框架",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-8-1",
+    "ch5-4-1"
+   ],
+   "related": [
+    "ch6-3-1"
+   ],
+   "source": "高计Ch6课件 §6.1 p.2-4",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch6-2-1",
+   "cluster": "c62",
+   "title": "假设体系 6.1-6.5（放宽 MDS）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "保留遍历平稳；用长期方差存在性（A6.5）替代 MDS 得分假设；对照 Ch5 A5.1-5.5",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-2-1",
+    "ch6-1-1"
+   ],
+   "related": [
+    "ch6-3-1"
+   ],
+   "source": "高计Ch6课件 §6.2",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch6-3-1",
+   "cluster": "c63",
+   "title": "长期方差协方差矩阵 V=ΣΓ(j)（★ 核心概念）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "V=Σ_{j=−∞}^{∞}Γ(j)，Γ(j)=E(Z_tZ'_{t−j})；MDS 时退化为 E(X_tX_t'ε_t²)；与谱密度在零频处的关系",
+   "status": "pending",
+   "prerequisites": [
+    "ch6-2-1",
+    "prob-05-3"
+   ],
+   "related": [
+    "ch5-4-1",
+    "prob-03-4"
+   ],
+   "source": "高计Ch6课件 §6.3 p.9-13",
+   "mastery": 0.0,
+   "next_review": null,
+   "cross_refs": [
+    {
+     "project": "probability",
+     "item": "prob-05-3",
+     "relation": "prerequisite"
+    }
+   ]
+  },
+  {
+   "id": "ch6-3-2",
+   "cluster": "c63",
+   "title": "HAC 估计：kernel 法（Newey-West）",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "V̂=Σ_j k(j/M)Γ̂(j)；Bartlett kernel=Newey-West(1987)；Quadratic-Spectral；带宽选择 Andrews(1991)/NW(1994)",
+   "status": "pending",
+   "prerequisites": [
+    "ch6-3-1"
+   ],
+   "related": [
+    "ch5-5-2"
+   ],
+   "source": "高计Ch6课件 §6.3 p.14-22",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch6-4-1",
+   "cluster": "c64",
+   "title": "Thm 6.1 OLS 一致性",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "Assumptions 6.1-6.5(a) 下 β̂→ᵖβ_o；证明与 Thm 5.3 同构（WLLN+迭代期望），MDS 条件换成弱相依",
+   "status": "pending",
+   "prerequisites": [
+    "ch6-2-1",
+    "ch5-3-1"
+   ],
+   "related": [],
+   "source": "高计Ch6课件 §6.4 Thm 6.1",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch6-5-1",
+   "cluster": "c65",
+   "title": "Lemma 6.1 White (1984) CLT（遍历平稳零均值）",
+   "type": "theorem",
+   "mode": "blackbox",
+   "note": "V=ΣΓ(j) 有限非奇异 + 条件期望衰减 ⇒ n^{−1/2}ΣZ_t→ᵈN(0,V)；MDS CLT 的推广",
+   "status": "pending",
+   "prerequisites": [
+    "ch6-2-1",
+    "prob-07-5"
+   ],
+   "related": [
+    "ch5-1-10"
+   ],
+   "source": "高计Ch6课件 §6.5 Lemma 6.1",
+   "mastery": 0.0,
+   "next_review": null,
+   "cross_refs": [
+    {
+     "project": "probability",
+     "item": "prob-07-5",
+     "relation": "extension"
+    }
+   ]
+  },
+  {
+   "id": "ch6-5-2",
+   "cluster": "c65",
+   "title": "Thm 6.2 渐近正态（三明治+长期方差）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "√n(β̂−β_o)→ᵈN(0,Q⁻¹VQ⁻¹)，V=长期方差；三明治形式不变、V 内容升级——Ch5 是特例",
+   "status": "pending",
+   "prerequisites": [
+    "ch6-4-1",
+    "ch6-5-1",
+    "ch6-3-1"
+   ],
+   "related": [
+    "ch5-4-1"
+   ],
+   "source": "高计Ch6课件 §6.5 Thm 6.2",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch6-6-1",
+   "cluster": "c66",
+   "title": "假设检验（HAC 版 Wald）",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "检验统计量同 Ch5 §5.6 形式，但方差用 HAC 估计；Corollary 6.1 给出 H₀ 下分布",
+   "status": "pending",
+   "prerequisites": [
+    "ch6-5-2",
+    "ch5-6-3"
+   ],
+   "related": [
+    "ch5-6-5"
+   ],
+   "source": "高计Ch6课件 §6.6",
+   "mastery": 0.0,
+   "next_review": null,
+   "cross_refs": [
+    {
+     "project": "probability",
+     "item": "prob-09-3",
+     "relation": "same"
+    }
+   ]
+  },
+  {
+   "id": "ch6-7-1",
+   "cluster": "c67",
+   "title": "Cochrane-Orcutt 程序（序列相关修正）",
+   "type": "method",
+   "mode": "blackbox",
+   "note": "AR(1) 误差的拟差分变换→迭代估计 ρ̂→变换回归；与 HAC 推断是两条路线（修正 vs 稳健）",
+   "status": "pending",
+   "prerequisites": [
+    "ch6-1-1",
+    "ch5-8-2"
+   ],
+   "related": [
+    "ch6-3-2"
+   ],
+   "source": "高计Ch6课件 §6.7",
+   "mastery": 0.0,
+   "next_review": null
+  }
+ ]
+}

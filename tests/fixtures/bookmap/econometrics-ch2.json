@@ -1,0 +1,143 @@
+{
+ "meta": {
+  "book": "高级计量经济学课件 Ch2 (Hong 2024): General Regression Analysis",
+  "source_files": [
+   "content/books/econometrics/高计_Ch2_2024.pdf",
+   "Obsidian: Ch02-一般回归分析.md"
+  ],
+  "built": "2026-07-31",
+  "status": "active",
+  "level": "骨架级（笔记简略，已学）"
+ },
+ "domain": "Advanced Econometrics",
+ "clusters": {
+  "c21": {
+   "title": "§2.1 条件概率分布",
+   "learned": false
+  },
+  "c22": {
+   "title": "§2.2 条件均值与回归分析",
+   "learned": false
+  },
+  "c23": {
+   "title": "§2.3 线性回归建模",
+   "learned": false
+  },
+  "c24": {
+   "title": "§2.4 正确模型设定",
+   "learned": false
+  },
+  "c25": {
+   "title": "§2.5 结论",
+   "learned": false
+  }
+ },
+ "items": [
+  {
+   "id": "ch2-2-1",
+   "cluster": "c22",
+   "title": "条件均值与 BLP 系数（最佳线性预测）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "回归函数=条件均值 E(Y|X)；BLP 是条件均值的最优线性近似；全书基石",
+   "status": "pending",
+   "prerequisites": [
+    "prob-05-4"
+   ],
+   "related": [
+    "ch4-2-1"
+   ],
+   "source": "高计Ch2课件 §2.2 + Ch02 笔记",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch2-3-1",
+   "cluster": "c23",
+   "title": "线性回归建模与正交条件 E(Xu)=0",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "BLP 一阶条件 E(Xu)=0；识别方程；A4.3/A5.3 的源头",
+   "status": "pending",
+   "prerequisites": [
+    "ch2-2-1",
+    "prob-05-3"
+   ],
+   "related": [
+    "ch4-3-1",
+    "ch5-3-1"
+   ],
+   "source": "高计Ch2课件 §2.3 + Ch02 笔记",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch2-4-1",
+   "cluster": "c24",
+   "title": "正确模型设定（条件均值）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "E(Y|X)=X'β^o 时线性设定正确；设定错误后果链",
+   "status": "pending",
+   "prerequisites": [
+    "ch2-3-1"
+   ],
+   "related": [
+    "ch4-2-1"
+   ],
+   "source": "高计Ch2课件 §2.4",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch2-4-2",
+   "cluster": "c24",
+   "title": "Thm 2.3/2.4/2.7（BLP 性质）",
+   "type": "theorem",
+   "mode": "blackbox",
+   "note": "BLP 存在唯一性/投影性质；考试只需会用",
+   "status": "pending",
+   "prerequisites": [
+    "ch2-3-1"
+   ],
+   "related": [],
+   "source": "高计Ch2课件 §2.2-2.4",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch2-4-3",
+   "cluster": "c24",
+   "title": "Ex 2.11 模型误设案例（二次 DGP 线性拟合）",
+   "type": "example",
+   "mode": "blackbox",
+   "note": "非线性 DGP 用线性模型→BLP 仍是最优线性近似，但非真实条件均值",
+   "status": "pending",
+   "prerequisites": [
+    "ch2-4-2"
+   ],
+   "related": [],
+   "source": "高计Ch2课件 §2.4 Ex 2.11",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch2-5-1",
+   "cluster": "c25",
+   "title": "§2.5 结论：从条件均值到回归",
+   "type": "section",
+   "mode": "blackbox",
+   "note": "Ch2 一般回归 → Ch3 经典线性 → Ch4 渐近理论",
+   "status": "pending",
+   "prerequisites": [
+    "ch2-4-1"
+   ],
+   "related": [
+    "ch4-1-1"
+   ],
+   "source": "高计Ch2课件 §2.5",
+   "mastery": 0.0,
+   "next_review": null
+  }
+ ]
+}

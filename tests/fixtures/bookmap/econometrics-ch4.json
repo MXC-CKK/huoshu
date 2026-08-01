@@ -1,0 +1,261 @@
+{
+ "meta": {
+  "book": "高级计量经济学课件 Ch4 (Hong 2024): Linear Regression Models with IID Observations",
+  "source_files": [
+   "content/books/econometrics/高计_Ch4_2024.pdf",
+   "Obsidian: Ch04-IID随机样本线性回归.md",
+   "Obsidian: Ch04-定理证明详解.md"
+  ],
+  "built": "2026-07-31",
+  "status": "active",
+  "level": "详细级（笔记完整，已学）"
+ },
+ "domain": "Advanced Econometrics",
+ "clusters": {
+  "c41": {
+   "title": "§4.1 渐近理论导论",
+   "learned": false
+  },
+  "c42": {
+   "title": "§4.2 框架与假设",
+   "learned": false
+  },
+  "c43": {
+   "title": "§4.3 OLS 的一致性",
+   "learned": false
+  },
+  "c44": {
+   "title": "§4.4 OLS 的渐近正态性",
+   "learned": false
+  },
+  "c45": {
+   "title": "§4.5 渐近方差估计",
+   "learned": false
+  },
+  "c46": {
+   "title": "§4.6 假设检验",
+   "learned": false
+  },
+  "c47": {
+   "title": "§4.7 条件同方差检验",
+   "learned": false
+  },
+  "c48": {
+   "title": "§4.8 小结",
+   "learned": false
+  }
+ },
+ "items": [
+  {
+   "id": "ch4-1-1",
+   "cluster": "c41",
+   "title": "渐近理论工具箱",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "收敛：均方→依概率→依分布；WLLN/SLLN/CLT；Slutsky+Delta+连续映射；放弃正态性与同方差",
+   "status": "pending",
+   "prerequisites": [
+    "prob-07-1",
+    "prob-07-3",
+    "prob-07-5"
+   ],
+   "related": [
+    "ch4-4-1"
+   ],
+   "source": "高计Ch4课件 §4.1",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-2-1",
+   "cluster": "c42",
+   "title": "假设体系 A4.1-4.7（★ Ch5 对照基准）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "A4.1 IID 样本（横截面限定）；A4.3 E(ε|X_t)=0；A4.5 V 有限正定；A4.6 同方差/ A4.7 四阶矩为可选",
+   "status": "pending",
+   "prerequisites": [
+    "prob-06-1",
+    "ch4-1-1"
+   ],
+   "related": [
+    "ch5-2-1"
+   ],
+   "source": "高计Ch4课件 §4.2",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-2-2",
+   "cluster": "c42",
+   "title": "严格外生性 ⇒ A4.3（IID 下等价）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "迭代期望律一步证明；IID 使不同期独立 ⇒ 等价；时间序列下断裂（→Ch5 关键差异）",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-2-1",
+    "prob-05-4"
+   ],
+   "related": [
+    "ch5-2-2"
+   ],
+   "source": "Ch04 笔记 §4.2 + 证明详解 §4.6",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-3-1",
+   "cluster": "c43",
+   "title": "Thm 4.1 OLS 一致性",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "β̂→ᵖβ^o；证明链 β̂−β^o=Q̂⁻¹·n⁻¹ΣX_tε_t→ᵖ0（WLLN+迭代期望）；Ch5 Thm 5.3 的同构原型",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-2-1",
+    "prob-07-4"
+   ],
+   "related": [
+    "ch5-3-1"
+   ],
+   "source": "高计Ch4课件 §4.3 Thm 4.1",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-4-1",
+   "cluster": "c44",
+   "title": "Thm 4.2 渐近正态 + Thm 4.3 同方差退化",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "√n(β̂−β^o)→ᵈN(0,Q⁻¹VQ⁻¹)；证明：Z_t=X_tε_t IID→多元CLT→Slutsky；A4.6 下 V=σ²Q 退化 σ²Q⁻¹；直觉=噪声被信息夹扁",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-3-1",
+    "ch4-4-2",
+    "prob-04-2"
+   ],
+   "related": [
+    "ch5-4-1",
+    "ch5-4-2"
+   ],
+   "source": "高计Ch4课件 §4.4 Thm 4.2/4.3 + 证明详解 §4.4",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-4-2",
+   "cluster": "c44",
+   "title": "Lemma 4.11 多元 CLT（Cramér-Wold）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "IID 零均值方差 V ⇒ √nZ̄→ᵈN(0,V)；任意 λ 投影→一元 CLT→Cramér-Wold 拼回；var(AX)=AV A' 要求 A 常数",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-1-1",
+    "prob-07-5"
+   ],
+   "related": [
+    "ch4-4-1"
+   ],
+   "source": "Ch04 证明详解 §4.2",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-5-1",
+   "cluster": "c45",
+   "title": "方差估计两情形（Thm 4.5/4.6 White）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "同方差：s²(X'X)⁻¹；异方差：Q̂⁻¹V̂Q̂⁻¹=(X'X)⁻¹X'D(e)D(e)'X(X'X)⁻¹（White 1980）；需 A4.7",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-4-1"
+   ],
+   "related": [
+    "ch5-5-1",
+    "ch5-5-2"
+   ],
+   "source": "高计Ch4课件 §4.5 Thm 4.5/4.6",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-5-2",
+   "cluster": "c45",
+   "title": "Lemma 4.13 V̂→V 三层拆解 + 用错公式后果",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "e_t 替代 ε_t 三项分解；用错同方差公式：Type I Error 膨胀（5%→15-20%），金融实证默认 White",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-5-1",
+    "prob-03-2"
+   ],
+   "related": [],
+   "source": "Ch04 笔记 §4.5 Lemma 4.13",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-6-1",
+   "cluster": "c46",
+   "title": "检验体系 Thm 4.7-4.11（t/Wald/(n−K)R²/稳健）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "H₀:Rβ=r；传统（A4.6）：T→N(0,1)、J·F→χ²_J、(n−K)R²→χ²_k；稳健（A4.7）：T_r/W_r 用 White 方差",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-5-1",
+    "prob-04-3",
+    "prob-09-3"
+   ],
+   "related": [
+    "ch5-6-2",
+    "ch5-6-3",
+    "ch5-6-4",
+    "ch5-6-5"
+   ],
+   "source": "高计Ch4课件 §4.6 Thm 4.7-4.11",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-7-1",
+   "cluster": "c47",
+   "title": "White 同方差检验（§4.7）",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "辅助回归 e² 对截距+一次+二次+交叉；(n−J−1)R̃²→χ²_J，J=K(K+1)/2−1；p<0.05→White 稳健标准误",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-6-1",
+    "ch4-5-1"
+   ],
+   "related": [
+    "ch5-7-1"
+   ],
+   "source": "高计Ch4课件 §4.7",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch4-8-1",
+   "cluster": "c48",
+   "title": "§4.8 小结：有限样本→大样本渐近",
+   "type": "section",
+   "mode": "blackbox",
+   "note": "Ch03 精确分布 → Ch04 渐近理论；OLS 一致性+渐近正态不依赖正态性/同方差",
+   "status": "pending",
+   "prerequisites": [
+    "ch4-7-1"
+   ],
+   "related": [],
+   "source": "高计Ch4课件 §4.8",
+   "mastery": 0.0,
+   "next_review": null
+  }
+ ]
+}

@@ -1,0 +1,675 @@
+{
+ "meta": {
+  "book": "洪永淼《概率论与统计学》（第二版）厦门大学课件 2024.12",
+  "source_files": [
+   "content/books/probability-statistics/00-全书总览.md",
+   "content/books/probability-statistics/*.pdf"
+  ],
+  "built": "2026-07-31",
+  "status": "active",
+  "level": "structure（结构级图谱：前置补缺定位层，细节按需补充）",
+  "basis": "KK 本科已修概率论与数理统计、随机过程；mastery 为初始估计待校准"
+ },
+ "domain": "Probability & Statistics",
+ "clusters": {
+  "c01": {
+   "title": "Ch01 导论",
+   "learned": false
+  },
+  "c02": {
+   "title": "Ch02 概率论基础",
+   "learned": false
+  },
+  "c03": {
+   "title": "Ch03 随机变量和一元概率分布",
+   "learned": false
+  },
+  "c04": {
+   "title": "Ch04 重要概率分布",
+   "learned": false
+  },
+  "c05": {
+   "title": "Ch05 多元随机变量及其概率分布",
+   "learned": false
+  },
+  "c06": {
+   "title": "Ch06 统计抽样理论导论",
+   "learned": false
+  },
+  "c07": {
+   "title": "Ch07 收敛和极限定理",
+   "learned": false
+  },
+  "c08": {
+   "title": "Ch08 参数估计和评估",
+   "learned": false
+  },
+  "c09": {
+   "title": "Ch09 假设检验",
+   "learned": false
+  },
+  "c10": {
+   "title": "Ch10 经典线性回归分析",
+   "learned": false
+  },
+  "c11": {
+   "title": "Ch11 大数据、机器学习与统计学",
+   "learned": false
+  },
+  "c12": {
+   "title": "Ch12 总结",
+   "learned": false
+  }
+ },
+ "items": [
+  {
+   "id": "prob-01-1",
+   "cluster": "c01",
+   "title": "两大公理与经济随机系统",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "经济体=随机系统；观测数据=实现值",
+   "source": "01-引言.pdf §1-4",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-02-1",
+   "cluster": "c02",
+   "title": "概率公理与集合论基础",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "概率空间 (Ω,F,P)；可列可加性",
+   "source": "02-概率论基础.pdf §2-4",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-02-2",
+   "cluster": "c02",
+   "title": "条件概率与贝叶斯定理",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "P(A|B)=P(AB)/P(B)；贝叶斯更新",
+   "source": "02-概率论基础.pdf §6-7",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-02-3",
+   "cluster": "c02",
+   "title": "独立性",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "P(AB)=P(A)P(B)；与不相关的关系",
+   "source": "02-概率论基础.pdf §8",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-03-1",
+   "cluster": "c03",
+   "title": "随机变量与 CDF",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "分布函数单调右连续；pdf/pmf",
+   "source": "03-随机变量和一元概率分布.pdf §1-4",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-03-2",
+   "cluster": "c03",
+   "title": "数学期望与矩",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "E[X]=∫xdF；方差/偏度/峰度；矩存在性（Cauchy 反例）",
+   "source": "03-随机变量和一元概率分布.pdf §6-7",
+   "mastery": 0.0,
+   "next_review": null,
+   "related": [
+    "prob-04-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-03-3",
+   "cluster": "c03",
+   "title": "MGF 与特征函数",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "唯一性；矩的生成；特征函数恒存在",
+   "source": "03-随机变量和一元概率分布.pdf §9-10",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-03-4",
+   "cluster": "c03",
+   "title": "MGF 与特征函数",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "唯一性；矩的生成；特征函数恒存在（谱密度/傅里叶分析的联系）",
+   "source": "03-随机变量和一元概率分布.pdf §9-10",
+   "mastery": 0.0,
+   "next_review": null,
+   "related": [
+    "prob-05-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-04-1",
+   "cluster": "c04",
+   "title": "离散分布：二项/泊松",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "均值方差；泊松=二项极限",
+   "source": "04-重要概率分布.pdf §2",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-04-2",
+   "cluster": "c04",
+   "title": "正态分布",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "标准化；线性组合仍正态；峰度=3",
+   "source": "04-重要概率分布.pdf §3",
+   "mastery": 0.0,
+   "next_review": null,
+   "related": [
+    "prob-05-3"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-04-3",
+   "cluster": "c04",
+   "title": "卡方分布 χ²",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "标准正态平方和；自由度；可加性；Wald 检验分布基础",
+   "source": "04-重要概率分布.pdf §3",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-04-2"
+   ],
+   "related": [
+    "prob-06-3"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-04-4",
+   "cluster": "c04",
+   "title": "t 分布",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "Z/√(χ²/df)；厚尾；df→∞→正态",
+   "source": "04-重要概率分布.pdf §3",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-04-2",
+    "prob-04-3"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-04-5",
+   "cluster": "c04",
+   "title": "F 分布",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "两个独立 χ²/df 之比；t²∼F(1,·)",
+   "source": "04-重要概率分布.pdf §3",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-04-3"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-05-1",
+   "cluster": "c05",
+   "title": "联合分布与边际分布",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "联合 pdf→边际（积分掉其他变量）",
+   "source": "05-多元随机变量及其概率分布.pdf §1-2",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-05-2",
+   "cluster": "c05",
+   "title": "条件分布与独立性",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "f(y|x)=f(x,y)/f_X(x)",
+   "source": "05-多元随机变量及其概率分布.pdf §3-4",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-02-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-05-3",
+   "cluster": "c05",
+   "title": "协方差与相关系数",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "Cov=0 不⇒独立；相关≠因果",
+   "source": "05-多元随机变量及其概率分布.pdf §7",
+   "mastery": 0.0,
+   "next_review": null,
+   "related": [
+    "prob-03-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-05-4",
+   "cluster": "c05",
+   "title": "条件期望（★★ 计量核心工具）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "E[Y|X]；迭代期望律 E[E(Y|X)]=E[Y]；E[g(X)Y|X]=g(X)E[Y|X]；MDS 定义的基础",
+   "source": "05-多元随机变量及其概率分布.pdf §10",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-05-2"
+   ],
+   "related": [
+    "prob-02-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-05-5",
+   "cluster": "c05",
+   "title": "特征值/特征根与矩阵基础",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "单位根、AR 平稳条件 |α|<1、协方差矩阵谱分解的基础",
+   "source": "线性代数基础（非课件内容，标记为外部基础）",
+   "mastery": 0.0,
+   "next_review": null,
+   "related": [
+    "prob-05-3"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-06-1",
+   "cluster": "c06",
+   "title": "总体与随机样本",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "IID 样本；统计量",
+   "source": "06-统计抽样理论导论.pdf §1",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-06-2",
+   "cluster": "c06",
+   "title": "样本均值的抽样分布",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "正态总体精确分布；非正态依 CLT",
+   "source": "06-统计抽样理论导论.pdf §2",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-04-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-06-3",
+   "cluster": "c06",
+   "title": "样本方差与 t/F 分布来源",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "(n−1)s²/σ²∼χ²(n−1)；t 统计量构造；F=方差比",
+   "source": "06-统计抽样理论导论.pdf §3-5",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-04-3",
+    "prob-04-4",
+    "prob-04-5"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-06-4",
+   "cluster": "c06",
+   "title": "充分统计量",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "因子分解定理",
+   "source": "06-统计抽样理论导论.pdf §6",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-07-1",
+   "cluster": "c07",
+   "title": "依概率收敛",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "P(|X_n−X|>ε)→0；OLS 一致性 β̂→ᵖβ_o 的定义",
+   "source": "07-收敛和极限定理.pdf §4",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-03-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-07-2",
+   "cluster": "c07",
+   "title": "几乎处处收敛与 Lp 收敛",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "强弱关系；二次均值收敛",
+   "source": "07-收敛和极限定理.pdf §3,5",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-07-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-07-3",
+   "cluster": "c07",
+   "title": "依分布收敛",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "CDF 逐点收敛；√n(β̂−β_o)→ᵈN(0,·) 的定义；Slutsky 定理",
+   "source": "07-收敛和极限定理.pdf §6",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-07-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-07-4",
+   "cluster": "c07",
+   "title": "大数定律（WLLN）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "样本均值→ᵖ期望；遍历平稳版（计量 Ch5 用）",
+   "source": "07-收敛和极限定理.pdf §7",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-07-1",
+    "prob-03-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-07-5",
+   "cluster": "c07",
+   "title": "中心极限定理（CLT）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "√n(X̄−μ)→ᵈN(0,σ²)；Lindeberg-Lévy；MDS 版 CLT（计量 Ch5）",
+   "source": "07-收敛和极限定理.pdf §7",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-07-3",
+    "prob-04-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-08-1",
+   "cluster": "c08",
+   "title": "MLE 与渐近性质",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "似然函数最大化；一致性+渐近正态（信息矩阵）；不变性",
+   "source": "08-参数估计和评估.pdf §2-3",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-07-5"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-08-2",
+   "cluster": "c08",
+   "title": "GMM 矩方法",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "矩条件 E[g(X,θ)]=0；计量 Ch7 前置",
+   "source": "08-参数估计和评估.pdf §4-5",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-03-2"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-08-3",
+   "cluster": "c08",
+   "title": "MSE 与最优无偏估计",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "偏差²+方差；BLUE 思想",
+   "source": "08-参数估计和评估.pdf §6-7",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-08-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-08-4",
+   "cluster": "c08",
+   "title": "Cramér-Rao 下界",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "方差下界=1/信息量",
+   "source": "08-参数估计和评估.pdf §8",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-08-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-09-1",
+   "cluster": "c09",
+   "title": "Neyman-Pearson 引理",
+   "type": "theorem",
+   "mode": "blackbox",
+   "note": "似然比检验最优",
+   "source": "09-假设检验.pdf §2",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-08-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-09-2",
+   "cluster": "c09",
+   "title": "检验基本概念：显著性水平/功效",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "两类错误；p 值；检验水平",
+   "source": "09-假设检验.pdf §1",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-09-3",
+   "cluster": "c09",
+   "title": "Wald 检验",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "无约束估计的距离；(Rθ̂−r)'[RVR']⁻¹(Rθ̂−r)→χ²_J；计量 Thm 5.10 的前置",
+   "source": "09-假设检验.pdf §3",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-09-2",
+    "prob-08-1",
+    "prob-04-3"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-09-4",
+   "cluster": "c09",
+   "title": "LM 检验（拉格朗日乘子）",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "约束下估计的得分；Engle ARCH 检验=LM 检验；只需约束估计",
+   "source": "09-假设检验.pdf §4",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-09-2",
+    "prob-08-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-09-5",
+   "cluster": "c09",
+   "title": "LR 似然比检验",
+   "type": "method",
+   "mode": "blackbox",
+   "note": "有/无约束似然比；三检验关系 Wald≥LR≥LM（渐近相等）",
+   "source": "09-假设检验.pdf §5",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-09-2",
+    "prob-08-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-10-1",
+   "cluster": "c10",
+   "title": "CLRM 与 OLS",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "Y=Xβ+ε；OLS 解；计量 Ch3 前置",
+   "source": "10-经典线性回归分析.pdf §1-2",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-05-3",
+    "prob-06-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-10-2",
+   "cluster": "c10",
+   "title": "OLS 无偏性与有效性（Gauss-Markov）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "严格外生+同方差下 BLUE",
+   "source": "10-经典线性回归分析.pdf §4",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-10-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-10-3",
+   "cluster": "c10",
+   "title": "OLS 抽样分布与参数检验",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "正态误差下 t/F 精确分布；与计量渐近版的对照",
+   "source": "10-经典线性回归分析.pdf §5-7",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-10-2",
+    "prob-04-4",
+    "prob-04-5"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-10-4",
+   "cluster": "c10",
+   "title": "GLS 广义最小二乘",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "已知协方差结构时最优；计量 Ch3 对比",
+   "source": "10-经典线性回归分析.pdf §9",
+   "mastery": 0.0,
+   "next_review": null,
+   "prerequisites": [
+    "prob-10-1"
+   ],
+   "status": "pending"
+  },
+  {
+   "id": "prob-11-1",
+   "cluster": "c11",
+   "title": "大数据、机器学习与统计学",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "ML 本质=统计预测；维度诅咒",
+   "source": "11-大数据机器学习与统计学.pdf",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "prob-12-1",
+   "cluster": "c12",
+   "title": "全书串联：概率→统计推断→回归",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "概率论(Ch2-5)→抽样(Ch6)→极限(Ch7)→估计检验(Ch8-9)→回归(Ch10)",
+   "source": "12-结论.pdf",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  }
+ ]
+}

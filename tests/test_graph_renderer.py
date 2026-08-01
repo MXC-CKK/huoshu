@@ -314,7 +314,7 @@ class TestGraphEdgeDefaults:
 class TestRealBookmapRendering:
     """用真实 bookmap 验证渲染逻辑。"""
 
-    BOOKMAP_DIR = Path(os.environ.get("HUOSHU_TEST_BOOKMAP_DIR", "/root/projects/learning-agent/bookmap"))
+    BOOKMAP_DIR = Path(__file__).parent / "fixtures" / "bookmap"
 
     @pytest.mark.parametrize("filename", [
         "probability.json",
@@ -344,7 +344,7 @@ class TestRealBookmapRendering:
     ])
     def test_node_detail_all_items(self, filename: str) -> None:
         """每个 item 都能生成详情。"""
-        path = Path(os.environ.get("HUOSHU_TEST_BOOKMAP_DIR", "/root/projects/learning-agent/bookmap")) / filename
+        path = Path(__file__).parent / "fixtures" / "bookmap" / filename
         if not path.exists():
             pytest.skip(f"{path} 不存在")
 

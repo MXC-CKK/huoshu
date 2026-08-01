@@ -477,7 +477,7 @@ class TestDataClasses:
 class TestRealBookmaps:
     """用 learning-agent 中的真实 bookmap 测试。"""
 
-    BOOKMAP_DIR = Path(os.environ.get("HUOSHU_TEST_BOOKMAP_DIR", "/root/projects/learning-agent/bookmap"))
+    BOOKMAP_DIR = Path(__file__).parent / "fixtures" / "bookmap"
 
     @pytest.mark.parametrize("filename", [
         "probability.json",

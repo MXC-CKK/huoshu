@@ -1,0 +1,651 @@
+{
+ "meta": {
+  "book": "高级计量经济学课件 Ch5 (Hong 2024): Linear Regression Models with Dependent Observations",
+  "chapter": "Ch05 平稳时间序列的线性回归模型",
+  "source_notes": "Obsidian: 10-课程笔记/高级计量经济学/Ch05-平稳时间序列的线性回归模型.md",
+  "extraction_method": "四层分解(Domain→Cluster→Standard→Item) + 原子性三标准(Atomic/Assessable/Meaningful)",
+  "built": "2026-07-31",
+  "status": "active",
+  "source_files": [
+   "content/books/econometrics/高计_Ch5_2024.pdf",
+   "Obsidian: Ch05-平稳时间序列的线性回归模型.md"
+  ]
+ },
+ "domain": "Advanced Econometrics",
+ "clusters": {
+  "c51": {
+   "title": "§5.1 时间序列分析导论",
+   "learned": false
+  },
+  "c52": {
+   "title": "§5.2 平稳时间序列线性回归模型假设",
+   "learned": false
+  },
+  "c53": {
+   "title": "§5.3 OLS 的一致性",
+   "learned": false
+  },
+  "c54": {
+   "title": "§5.4 OLS 的渐近正态性",
+   "learned": false
+  },
+  "c55": {
+   "title": "§5.5 渐近方差估计",
+   "learned": false
+  },
+  "c56": {
+   "title": "§5.6 假设检验",
+   "learned": false
+  },
+  "c57": {
+   "title": "§5.7 条件异方差与 ARCH 检验",
+   "learned": false
+  },
+  "c58": {
+   "title": "§5.8 序列相关检验",
+   "learned": false
+  },
+  "c59": {
+   "title": "§5.9 小结",
+   "learned": false
+  }
+ },
+ "items": [
+  {
+   "id": "ch5-1-1",
+   "cluster": "c51",
+   "title": "随机时间序列过程 (Def 5.1)",
+   "type": "definition",
+   "mode": "blackbox",
+   "note": "{Z_t} 由 (Ω,F,P) 概率法则控制",
+   "prerequisites": [
+    "prob-02-1"
+   ],
+   "related": [
+    "ch5-1-2"
+   ],
+   "source": "Ch5 §5.1 Def 5.1",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-2",
+   "cluster": "c51",
+   "title": "平稳性四定义 (Def 5.2-5.5)",
+   "type": "definition",
+   "mode": "whitebox",
+   "note": "严格平稳→N阶平稳→弱平稳；严格⇏弱平稳(二阶矩不存在时)",
+   "prerequisites": [
+    "prob-03-2"
+   ],
+   "related": [
+    "ch5-1-3",
+    "ch5-1-9"
+   ],
+   "source": "Ch5 §5.1 Def 5.2-5.5",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-3",
+   "cluster": "c51",
+   "title": "三大时间序列模型 (AR/MA/ARMA)",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "AR(1)平稳条件|α|<1；MA(q)自协方差q+1截尾；Wold分解→MA(∞)",
+   "prerequisites": [
+    "prob-03-2"
+   ],
+   "related": [
+    "ch5-1-4",
+    "ch5-1-5"
+   ],
+   "source": "Ch5 §5.1 三大模型",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-4",
+   "cluster": "c51",
+   "title": "AR(1)→MA(∞) 展开与 IRF",
+   "type": "method",
+   "mode": "blackbox",
+   "note": "Z_t=Σα^j ε_{t-j}；IRF: ∂Z_{t+j}/∂ε_t=α^j",
+   "prerequisites": [
+    "ch5-1-3"
+   ],
+   "related": [
+    "ch5-1-10"
+   ],
+   "source": "Ch5 §5.1",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-5",
+   "cluster": "c51",
+   "title": "自协方差函数与 ACF",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "γ(j)=Cov(Z_t,Z_{t−j})；AR(1)拖尾/MA(1)截尾；ρ(j)=γ(j)/γ(0)",
+   "prerequisites": [
+    "prob-03-2"
+   ],
+   "related": [
+    "ch5-1-6"
+   ],
+   "source": "Ch5 §5.1",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-6",
+   "cluster": "c51",
+   "title": "谱密度函数 (Def 5.6)",
+   "type": "definition",
+   "mode": "blackbox",
+   "note": "h(ω)=1/2π·Σγ(j)e^{−ijω}；WN谱=σ²/2π平坦",
+   "prerequisites": [
+    "prob-03-4"
+   ],
+   "related": [
+    "ch5-1-5"
+   ],
+   "source": "Ch5 §5.1 Def 5.6",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-7",
+   "cluster": "c51",
+   "title": "鞅与 MDS (Def 5.7)",
+   "type": "definition",
+   "mode": "whitebox",
+   "note": "E(ε_t|I_{t−1})=0 唯一条件；不要求独立同分布",
+   "prerequisites": [
+    "prob-05-4"
+   ],
+   "related": [
+    "ch5-1-8",
+    "ch5-2-1"
+   ],
+   "source": "Ch5 §5.1 Def 5.7",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-8",
+   "cluster": "c51",
+   "title": "包含关系：IID⊂MDS⊂WN (Lemma 5.1)",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "MDS→WN 证明用迭代期望；反例：非线性MA是WN非MDS(Hong & Lee 2003)",
+   "prerequisites": [
+    "ch5-1-7",
+    "prob-05-4"
+   ],
+   "related": [
+    "ch5-1-9"
+   ],
+   "source": "Ch5 §5.1 Lemma 5.1/Ex 5.15",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-9",
+   "cluster": "c51",
+   "title": "单位根/差分平稳 (Def 5.8)",
+   "type": "definition",
+   "mode": "whitebox",
+   "note": "特征根=1；ΔZ_t 平稳；趋势平稳vs随机游走对比(冲击去向/方差/IRF)",
+   "prerequisites": [
+    "prob-05-5",
+    "ch5-1-3"
+   ],
+   "related": [
+    "ch5-1-10"
+   ],
+   "source": "Ch5 §5.1 Def 5.8/Ex 5.12",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-1-10",
+   "cluster": "c51",
+   "title": "遍历性 (Def 5.9) 与 WLLN/CLT (Thm 5.1/5.2)",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "渐近独立；遍历平稳WLLN；MDS CLT: √n Z̄→N(0,V), V=E(Z_t Z_t')",
+   "prerequisites": [
+    "prob-07-1",
+    "prob-07-5",
+    "ch5-1-7"
+   ],
+   "related": [
+    "ch5-3-1",
+    "ch5-4-1"
+   ],
+   "source": "Ch5 §5.1 Thm 5.1/5.2",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-2-1",
+   "cluster": "c52",
+   "title": "A5.1-A5.5 假设体系（Ch5 版）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "遍历平稳替代IID；A5.3 同期外生 E(ε_t|X_t)=0；A5.5 得分过程为MDS",
+   "prerequisites": [
+    "ch5-1-7",
+    "ch5-1-10"
+   ],
+   "related": [
+    "ch5-2-2"
+   ],
+   "source": "Ch5 §5.2",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-2-2",
+   "cluster": "c52",
+   "title": "Ch4(IID) vs Ch5(时间序列) 假设对比",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "IID下同期外生⇒严格外生自动恢复；Ch5放弃IID后断裂——X_t可含Y_{t−1}",
+   "prerequisites": [
+    "ch5-2-1",
+    "ch4-2-1"
+   ],
+   "related": [
+    "ch5-3-1"
+   ],
+   "source": "Ch5 §5.2 对比表",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-3-1",
+   "cluster": "c53",
+   "title": "Thm 5.3 OLS 一致性",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "β̂→ᵖβ_o；两步：Q̂→ᵖQ + n⁻¹ΣX_tε_t→ᵖ0(迭代期望+WLLN)；MDS在一致性证明中未直接用",
+   "prerequisites": [
+    "ch5-2-1",
+    "ch5-1-10",
+    "prob-05-4",
+    "ch4-3-1"
+   ],
+   "related": [
+    "ch5-4-1"
+   ],
+   "source": "Ch5 §5.3 Thm 5.3",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-4-1",
+   "cluster": "c54",
+   "title": "Thm 5.4 OLS 渐近正态性（三明治）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "√n(β̂−β_o)→ᵈN(0,Q⁻¹VQ⁻¹)；Q=E(X_tX_t'), V=E(X_tX_t'ε_t²)；Slutsky 合体",
+   "prerequisites": [
+    "ch5-3-1",
+    "prob-07-5",
+    "prob-04-2",
+    "ch4-4-1"
+   ],
+   "related": [
+    "ch5-4-2"
+   ],
+   "source": "Ch5 §5.4 Thm 5.4",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-4-2",
+   "cluster": "c54",
+   "title": "Thm 5.5 同方差退化 V=σ²Q",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "A5.6 E(ε_t²|X_t)=σ² ⇒ avar=σ²Q⁻¹；迭代期望三步",
+   "prerequisites": [
+    "ch5-4-1",
+    "prob-05-4"
+   ],
+   "related": [
+    "ch5-5-1"
+   ],
+   "source": "Ch5 §5.4 Thm 5.5",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-5-1",
+   "cluster": "c55",
+   "title": "Case I：同方差下方差估计 (Thm 5.6/5.7)",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "s²=e'e/(n−K)→ᵖσ²；avar估计 s²(X'X)⁻¹ 与经典形式一致",
+   "prerequisites": [
+    "ch5-4-2",
+    "prob-04-3"
+   ],
+   "related": [
+    "ch5-5-2"
+   ],
+   "source": "Ch5 §5.5 Thm 5.6/5.7",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-5-2",
+   "cluster": "c55",
+   "title": "Case II：异方差稳健方差 (Lemma 5.3, A5.7)",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "V̂=n⁻¹ΣX_tX_t'e_t²；A5.7四阶矩；证明：e_t拆ε_t−(β̂−β_o)'X_t，残差项→ᵖ0",
+   "prerequisites": [
+    "ch5-4-1",
+    "ch5-3-1",
+    "prob-07-5"
+   ],
+   "related": [
+    "ch5-6-4"
+   ],
+   "source": "Ch5 §5.5 Lemma 5.3",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-6-1",
+   "cluster": "c56",
+   "title": "检验设定 H₀: Rβ_o=r",
+   "type": "concept",
+   "mode": "blackbox",
+   "note": "R为J×K限制矩阵（与R²无关！）；√n R(β̂−r)→ᵈN(0,RQ⁻¹VQ⁻¹R')",
+   "prerequisites": [
+    "ch5-4-1"
+   ],
+   "related": [
+    "ch5-6-2"
+   ],
+   "source": "Ch5 §5.6",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-6-2",
+   "cluster": "c56",
+   "title": "Thm 5.9 t 检验（J=1）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "T=(Rβ̂−r)/√[s²R(X'X)⁻¹R']→ᵈN(0,1)；不需正态性",
+   "prerequisites": [
+    "ch5-6-1",
+    "ch5-5-1",
+    "prob-04-2"
+   ],
+   "related": [
+    "ch5-6-3"
+   ],
+   "source": "Ch5 §5.6 Thm 5.9",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-6-3",
+   "cluster": "c56",
+   "title": "Thm 5.10 Wald 检验（J>1）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "W=J·F→ᵈχ²_J；大样本不用F分布",
+   "prerequisites": [
+    "ch5-6-1",
+    "ch5-5-1",
+    "prob-04-3"
+   ],
+   "related": [
+    "ch5-6-5"
+   ],
+   "source": "Ch5 §5.6 Thm 5.10",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-6-4",
+   "cluster": "c56",
+   "title": "Thm 5.11 (n−K)R² 检验",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "H₀:所有斜率=0；(n−K)R²→ᵈχ²_k；R²放大到非退化分布",
+   "prerequisites": [
+    "ch5-6-1",
+    "prob-04-3"
+   ],
+   "related": [
+    "ch5-6-6"
+   ],
+   "source": "Ch5 §5.6 Thm 5.11",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-6-5",
+   "cluster": "c56",
+   "title": "Thm 5.12/5.13 稳健 t/Wald（异方差）",
+   "type": "theorem",
+   "mode": "whitebox",
+   "note": "分母用 Q̂⁻¹V̂Q̂⁻¹；小样本Type I error可能大→经验法则：先检验同方差",
+   "prerequisites": [
+    "ch5-6-2",
+    "ch5-5-2"
+   ],
+   "related": [
+    "ch5-7-1"
+   ],
+   "source": "Ch5 §5.6 Thm 5.12/5.13",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-6-6",
+   "cluster": "c56",
+   "title": "应用：Granger 因果与 EMH 检验 (Ex 5.17/5.19)",
+   "type": "application",
+   "mode": "blackbox",
+   "note": "Granger=增量可预测性≠因果；EMH：不能拒绝≠成立；ARCH时(n−K)R²失效",
+   "prerequisites": [
+    "ch5-6-3",
+    "ch5-6-4"
+   ],
+   "related": [
+    "ch5-7-1"
+   ],
+   "source": "Ch5 §5.6 Ex 5.17/5.19",
+   "mastery": 0.0,
+   "next_review": null,
+   "status": "pending"
+  },
+  {
+   "id": "ch5-7-1",
+   "cluster": "c57",
+   "title": "White (1980) 检验在时间序列中的适用性",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "H₀: E(ε_t²|X_t)=σ²；{X_tε_t} 为 MDS 时 White 检验仍适用（步骤同 Ch4）",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-5-2",
+    "ch5-1-7"
+   ],
+   "related": [
+    "ch5-7-2",
+    "ch5-6-5"
+   ],
+   "source": "高计Ch5课件 §5.7 p.~104",
+   "mastery": 0.0,
+   "next_review": null,
+   "cross_refs": [
+    {
+     "project": "probability",
+     "item": "prob-09-3",
+     "relation": "prerequisite"
+    }
+   ]
+  },
+  {
+   "id": "ch5-7-2",
+   "cluster": "c57",
+   "title": "Engle (1982) ARCH-LM 检验",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "辅助回归 e_t²=α₀+Σαⱼe²_{t−j}+v_t；(n−q−1)R²→χ²_q；ε→e 替换不影响渐近分布（同 White 检验理由）",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-1-7",
+    "ch5-1-8",
+    "ch5-7-1"
+   ],
+   "related": [
+    "ch5-6-5"
+   ],
+   "source": "高计Ch5课件 §5.7 p.~106-109",
+   "mastery": 0.0,
+   "next_review": null,
+   "cross_refs": [
+    {
+     "project": "probability",
+     "item": "prob-09-4",
+     "relation": "same"
+    }
+   ]
+  },
+  {
+   "id": "ch5-7-3",
+   "cluster": "c57",
+   "title": "ARCH 效应与推断选择（静态 vs 动态）",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "静态模型（X 与 ε 独立）：A5.6 仍成立，t/F 可用；动态模型（X 含滞后 Y）：A5.6 可能失效，必须用稳健 t/F 与三明治方差",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-7-2",
+    "ch5-6-5"
+   ],
+   "related": [
+    "ch5-4-2"
+   ],
+   "source": "高计Ch5课件 §5.7 p.~110-113",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch5-8-1",
+   "cluster": "c58",
+   "title": "序列相关与 MDS 假设的关系",
+   "type": "concept",
+   "mode": "whitebox",
+   "note": "MDS ⇒ 无序列相关（cov(ε_t,ε_{t−j})=0）；序列相关 ⇒ {X_tε_t} 非 MDS ⇒ var(n^{-1/2}ΣX_tε_t)≠V，三明治失效；序列无关是 avar 有效性的必要条件",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-1-7",
+    "ch5-4-1"
+   ],
+   "related": [
+    "ch5-8-3"
+   ],
+   "source": "高计Ch5课件 §5.8 p.~114-117",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch5-8-2",
+   "cluster": "c58",
+   "title": "Breusch-Godfrey 序列相关检验",
+   "type": "method",
+   "mode": "whitebox",
+   "note": "H₀: E(ε_t|I_{t−1})=0；辅助回归 e_t=γ'X_t+Σαⱼe_{t−j}+u_t；nR²→χ²_p；**必须包含 X_t**（消除估计误差 X_t'(β̂−β_o) 的影响，否则渐近分布改变）；需条件同方差假设（对高频金融数据不适用）",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-8-1",
+    "ch5-6-3",
+    "ch5-3-1"
+   ],
+   "related": [
+    "ch5-7-2"
+   ],
+   "source": "高计Ch5课件 §5.8 p.~118-126",
+   "mastery": 0.0,
+   "next_review": null,
+   "cross_refs": [
+    {
+     "project": "probability",
+     "item": "prob-09-4",
+     "relation": "same"
+    }
+   ]
+  },
+  {
+   "id": "ch5-8-3",
+   "cluster": "c58",
+   "title": "序列相关检验作为模型设定检验",
+   "type": "application",
+   "mode": "blackbox",
+   "note": "序列相关可能源于：遗漏变量、函数形式错误、忽略动态（滞后项应入模型）；检验序列相关 = 动态回归的设定检验；动态模型中正确设定 E(ε_t|X_t)=0 要求 ε_t 是 MDS",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-8-2",
+    "ch5-2-2"
+   ],
+   "related": [
+    "ch5-6-6"
+   ],
+   "source": "高计Ch5课件 §5.8 p.~118-120",
+   "mastery": 0.0,
+   "next_review": null
+  },
+  {
+   "id": "ch5-9-1",
+   "cluster": "c59",
+   "title": "Ch5 小结：假设体系→推断链路复盘",
+   "type": "section",
+   "mode": "whitebox",
+   "note": "遍历平稳+MDS 假设体系 → 一致性(5.3) → 渐近正态(5.4) → 方差估计(5.5) → 检验(5.6) → 同方差/序列相关诊断(5.7/5.8) 的完整链路",
+   "status": "pending",
+   "prerequisites": [
+    "ch5-7-3",
+    "ch5-8-3"
+   ],
+   "related": [],
+   "source": "高计Ch5课件 §5.9",
+   "mastery": 0.0,
+   "next_review": null
+  }
+ ]
+}
