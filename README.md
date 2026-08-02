@@ -9,7 +9,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
-[![Tests](https://img.shields.io/badge/tests-358%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-364%20passed-brightgreen.svg)](tests/)
 
 > 📖 **新手上路？先看 [使用教程](docs/使用教程.md)** — 5 分钟上手 + 完整功能指南 + 配置参考 + 常见问题
 
@@ -69,7 +69,7 @@ huoshu/
 │   │   └── pages_settings.py  # 模型设置页
 │   ├── llm.py          # LLM 客户端 (DeepSeek/OpenAI/Ollama)
 │   └── data/           # 数据工具
-├── tests/              # 358 tests
+├── tests/              # 364 tests
 ├── examples/           # 示例图谱
 └── pyproject.toml
 ```
