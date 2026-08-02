@@ -11,6 +11,8 @@
 [![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
 [![Tests](https://img.shields.io/badge/tests-310%20passed-brightgreen.svg)](tests/)
 
+> 📖 **新手上路？先看 [使用教程](docs/使用教程.md)** — 5 分钟上手 + 完整功能指南 + 配置参考 + 常见问题
+
 ---
 
 ## 🎯 项目简介
