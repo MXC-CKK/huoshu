@@ -560,3 +560,63 @@ class TestCallLlmJson:
         with pytest.raises(RuntimeError, match="解析失败"):
             _call_llm_json(mock_llm, "sys", "user", retries=2)
         assert mock_llm.chat.call_count == 2
+
+
+# ── 无目录材料降级测试 ──────────────────────────────────────────────
+
+
+class TestNoTocDegradation:
+    """课程 PDF（无目录/章节标题）降级为整本书单簇。"""
+
+    def test_empty_clusters_falls_back_to_full_book(self, tmp_path: Path) -> None:
+        """目录抽取为空 → 降级「全书」单簇继续构建，不报错。"""
+        import learning_agent.build.graph_builder as gb_mod
+
+        pdf = tmp_path / "course.pdf"
+        pdf.write_text("dummy", encoding="utf-8")
+
+        fake_llm = MagicMock()
+        with (
+            patch("learning_agent.rag.ingest.extract_pages", return_value=[(1, "第一章 内容")]),
+            patch.object(gb_mod, "extract_clusters", return_value=[]),
+            patch.object(
+                gb_mod,
+                "extract_items",
+                return_value=[
+                    {"id": "ch1-1", "title": "测试知识点", "type": "concept",
+                     "mode": "blackbox", "source": "p.1", "note": ""}
+                ],
+            ),
+            patch.object(gb_mod, "infer_edges", return_value={"prerequisites": [], "related": []}),
+        ):
+            result = gb_mod.build_bookmap_from_pdf(pdf, fake_llm)
+
+        bookmap = result["bookmap"]
+        assert bookmap["clusters"]["ch1"]["title"] == "全书"
+        assert len(bookmap["items"]) == 1
+        assert result["stats"]["clusters"] == 1
+        assert result["stats"]["items"] == 1
+
+    def test_cluster_extraction_exception_falls_back(self, tmp_path: Path) -> None:
+        """目录抽取抛异常 → 同样降级，不中断构建。"""
+        import learning_agent.build.graph_builder as gb_mod
+
+        pdf = tmp_path / "course2.pdf"
+        pdf.write_text("dummy", encoding="utf-8")
+
+        fake_llm = MagicMock()
+        with (
+            patch("learning_agent.rag.ingest.extract_pages", return_value=[(1, "内容")]),
+            patch.object(gb_mod, "extract_clusters", side_effect=RuntimeError("LLM down")),
+            patch.object(
+                gb_mod,
+                "extract_items",
+                return_value=[{"id": "ch1-1", "title": "知识点", "type": "definition",
+                               "mode": "blackbox", "source": "p.1", "note": ""}],
+            ),
+            patch.object(gb_mod, "infer_edges", return_value={"prerequisites": [], "related": []}),
+        ):
+            result = gb_mod.build_bookmap_from_pdf(pdf, fake_llm)
+
+        assert result["bookmap"]["clusters"]["ch1"]["title"] == "全书"
+        assert result["stats"]["items"] == 1

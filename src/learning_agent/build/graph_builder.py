@@ -755,12 +755,15 @@ def build_bookmap_from_pdf(
     # ── Step 2: 抽取章节 ──
     if progress:
         progress("抽取目录结构", 0, 0)
+    clusters: list[dict[str, str]] = []
     try:
         clusters = extract_clusters(first_pages_text, llm)
-    except Exception as exc:
-        raise RuntimeError(f"目录抽取失败: {exc}") from exc
+    except Exception as exc:  # noqa: BLE001 - 目录抽取失败降级为整本书单簇
+        logger.warning("目录抽取失败，降级为整本书单簇: %s", exc)
     if not clusters:
-        raise ValueError("未能从教材中抽取到章节结构，请确认 PDF 包含目录或章节标题")
+        # 降级：课程 PDF/无目录材料 → 整本书作为一个簇（知识点抽取不受影响）
+        logger.warning("未抽到章节结构，降级为整本书单簇")
+        clusters = [{"id": "ch1", "title": "全书"}]
 
     # ── Step 3: 按章切分 ──
     if progress:
