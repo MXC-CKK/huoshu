@@ -75,9 +75,19 @@ huoshu/
 ### 环境要求
 
 - Python ≥ 3.12
-- [Ollama](https://ollama.com) (本地 embedding/LLM，可选)
+- [Ollama](https://ollama.com) — 教材检索（embedding）与本地 LLM 需要；图谱/学习/复习页不依赖
 
-### 安装
+### 安装（二选一）
+
+**方式 A：pip 安装（推荐，开箱即用）**
+
+```bash
+pip install learning-agent
+```
+
+装好后 `huoshu` 命令直接可用。
+
+**方式 B：源码运行（开发者）**
 
 ```bash
 git clone https://github.com/MXC-CKK/huoshu.git
@@ -88,28 +98,34 @@ pip install -e .
 ### 配置 LLM（可选，用于 Socratic 教学和智能出题）
 
 ```bash
-# DeepSeek（默认）
+# DeepSeek（默认，国内直连）
 export LLM_API_KEY=sk-your-deepseek-key
 
-# 或 OpenAI
+# 或 OpenAI（需海外网络）
 export LLM_PROVIDER=openai
 export LLM_API_KEY=sk-your-openai-key
 
-# 或 Ollama 本地（无需 API key）
+# 或 Ollama 本地（免费，无需 API key）
 export LLM_PROVIDER=ollama
 ```
+
+> 💡 Windows 用户：把 `export` 换成 `set`（PowerShell 用 `$env:LLM_API_KEY="..."`）。
+> 更简单的方式：在应用内「⚙️ 模型设置」页填写，保存后立即生效，无需碰环境变量。
 
 LLM 未配置时，学习和复习功能仍可用（自动降级为模板引导和关键词判分）。
 
 ### 启动
 
 ```bash
-# 方式一：统一入口（推荐）— 启动后浏览器自动打开 http://localhost:8501，
-# 侧边栏 5 页导航：知识图谱 / 学习会话 / 教材检索 / 间隔复习 / 模型设置
 huoshu
-# 或（源码方式）
-streamlit run src/learning_agent/main.py
 ```
+
+- 浏览器自动打开 **http://localhost:8501**（未自动打开则手动访问该地址）
+- 端口被占用时指定端口：`huoshu --server.port 8600`
+- 源码方式两条路都行：`huoshu` 或 `streamlit run src/learning_agent/main.py`
+- 使用虚拟环境（venv/conda）的记得先激活：Linux/macOS `source .venv/bin/activate`；Windows `.venv\Scripts\activate`
+
+启动后通过**左侧边栏**在 5 个页面间切换：
 
 | 页面 | 功能 |
 |------|------|
@@ -119,14 +135,25 @@ streamlit run src/learning_agent/main.py
 | 🔁 间隔复习 | 到期项自适应出题 |
 | ⚙️ 模型设置 | LLM 提供商/Key/代理配置 |
 
+### 首次使用 Checklist
+
+1. **Ollama 就绪**（教材检索需要）：启动 Ollama 后运行 `ollama pull nomic-embed-text`
+2. **放入教材 PDF**：复制 PDF 到 `~/.huoshu/pdf/`（Windows: `C:\Users\<你>\.huoshu\pdf\`），或用 `HUOSHU_PDF_DIR` 指定目录
+3. **准备图谱文件**：bookmap JSON 放到 `./bookmap/` 或 `~/.huoshu/bookmap/`（或用 `HUOSHU_BOOKMAP_DIR` 指定），图谱页侧边栏即可选择
+4. **配置 LLM**（可选）：见上，用于 Socratic 教学
+
+### 单页独立启动（高级用法）
+
 ```bash
-# 方式二：单页独立启动（高级用法）
 streamlit run src/learning_agent/ui/pages_graph.py   # 图谱可视化
 streamlit run src/learning_agent/ui/pages_study.py   # 学习会话
 streamlit run src/learning_agent/ui/pages_review.py  # 间隔复习
 streamlit run src/learning_agent/ui/pages_search.py  # 教材检索
+```
 
-# PDF 入库 + 检索（CLI，无需 UI）
+### CLI 操作（无需 UI 的 RAG 入库/检索）
+
+```bash
 python -m learning_agent.rag.cli ingest textbook.pdf --name mybook
 python -m learning_agent.rag.cli search "大数定律证明" --name mybook
 ```
@@ -141,8 +168,6 @@ pytest tests/ -v
 ---
 
 ## 📖 使用指南
-
-启动后通过**左侧边栏**在 5 个页面间切换。
 
 ### 1. 准备图谱文件
 
