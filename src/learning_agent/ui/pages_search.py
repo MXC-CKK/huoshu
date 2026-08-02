@@ -19,6 +19,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -106,6 +107,28 @@ def sanitize_filename(name: str) -> str:
         safe += ".pdf"
 
     return safe
+
+
+def sanitize_collection_name(name: str) -> str:
+    """将任意文件名清洗为 ChromaDB 合法集合名。
+
+    ChromaDB 集合名只允许 ``[a-zA-Z0-9._-]``（3-512 字符，首尾字母数字），
+    中文教材文件名（如「高计_Ch5_2024」）必须转换。
+
+    Args:
+        name: 原始名称（通常是 PDF 文件名 stem）。
+
+    Returns:
+        合法集合名：非法字符替换为 ``_``，去首尾分隔符，最短 3 字符。
+    """
+    cleaned = re.sub(r"[^a-zA-Z0-9._-]", "_", name or "")
+    # 去首尾非字母数字字符（_ . -）
+    cleaned = cleaned.strip("_.-")
+    # 最短 3 字符（ChromaDB 下限），空串回退
+    if len(cleaned) < 3:
+        cleaned = f"col_{cleaned}" if cleaned else "col_book"
+    # 最长 512 字符（ChromaDB 上限）
+    return cleaned[:512]
 
 
 def save_uploaded_pdf(filename: str, content: bytes) -> Path:
@@ -307,11 +330,11 @@ def _render_upload_ingest(config: dict[str, Any], pdf_dir: Path) -> None:
     # 入库参数
     col1, col2 = st.columns(2)
     with col1:
-        default_coll = Path(uploaded_file.name).stem
+        default_coll = sanitize_collection_name(Path(uploaded_file.name).stem)
         collection_name = st.text_input(
             "集合名称",
             value=st.session_state.get("ingest_upload_coll", default_coll),
-            help="ChromaDB 集合名，默认取上传文件名（不含扩展名）",
+            help="ChromaDB 集合名（仅字母/数字/._-），中文文件名已自动转换，可修改",
             key="ingest_upload_coll",
         )
     with col2:
@@ -350,6 +373,9 @@ def _render_upload_ingest(config: dict[str, Any], pdf_dir: Path) -> None:
         st.session_state[ingest_key] = False
 
     if st.button("📥 开始入库", type="primary", disabled=st.session_state[ingest_key], key="ingest_upload_btn"):
+        if not re.fullmatch(r"[a-zA-Z0-9._-]{3,512}", collection_name.strip()):
+            st.error("❌ 集合名仅允许字母/数字/._-（3-512 字符），请修改后再入库")
+            return
         try:
             content = uploaded_file.getvalue()
             with st.spinner(f"正在保存 {uploaded_file.name} 并生成向量..."):
@@ -410,8 +436,10 @@ def _render_directory_ingest(config: dict[str, Any], pdf_dir: Path) -> None:
     with col1:
         collection_name = st.text_input(
             "集合名称",
-            value=st.session_state.get("ingest_dir_coll", selected_pdf.stem),
-            help="ChromaDB 集合名，默认取 PDF 文件名（不含扩展名）",
+            value=st.session_state.get(
+                "ingest_dir_coll", sanitize_collection_name(selected_pdf.stem)
+            ),
+            help="ChromaDB 集合名（仅字母/数字/._-），中文文件名已自动转换，可修改",
             key="ingest_dir_coll",
         )
     with col2:
@@ -450,6 +478,9 @@ def _render_directory_ingest(config: dict[str, Any], pdf_dir: Path) -> None:
         st.session_state[ingest_key] = False
 
     if st.button("📥 开始入库", type="primary", disabled=st.session_state[ingest_key], key="ingest_dir_btn"):
+        if not re.fullmatch(r"[a-zA-Z0-9._-]{3,512}", collection_name.strip()):
+            st.error("❌ 集合名仅允许字母/数字/._-（3-512 字符），请修改后再入库")
+            return
         try:
             with st.spinner(f"正在解析 {selected_name} 并生成向量..."):
                 collection = ingest_pdf(

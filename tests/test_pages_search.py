@@ -203,3 +203,47 @@ class TestSaveUploadedPdf:
         assert ".." not in saved.name
         assert ":" not in saved.name
         assert saved.exists()
+
+
+class TestSanitizeCollectionName:
+    """sanitize_collection_name() 测试。"""
+
+    def test_chinese_filename(self) -> None:
+        """中文文件名转换为合法集合名（用户实际踩的坑）。"""
+        from learning_agent.ui.pages_search import sanitize_collection_name
+
+        assert sanitize_collection_name("高计_Ch5_2024") == "Ch5_2024"
+
+    def test_ascii_kept(self) -> None:
+        """合法字符保留。"""
+        from learning_agent.ui.pages_search import sanitize_collection_name
+
+        assert sanitize_collection_name("econometrics-ch5") == "econometrics-ch5"
+
+    def test_invalid_chars_replaced(self) -> None:
+        """非法字符替换为下划线。"""
+        from learning_agent.ui.pages_search import sanitize_collection_name
+
+        assert sanitize_collection_name("a b:c*d") == "a_b_c_d"
+
+    def test_short_name_padded(self) -> None:
+        """不足 3 字符时补齐前缀。"""
+        from learning_agent.ui.pages_search import sanitize_collection_name
+
+        assert sanitize_collection_name("ab") == "col_ab"
+
+    def test_empty_fallback(self) -> None:
+        """空串回退默认名。"""
+        from learning_agent.ui.pages_search import sanitize_collection_name
+
+        assert sanitize_collection_name("") == "col_book"
+
+    def test_result_is_always_valid(self) -> None:
+        """任意输入的结果都符合 ChromaDB 命名规则（3-512 字符）。"""
+        import re as _re
+
+        from learning_agent.ui.pages_search import sanitize_collection_name
+
+        for name in ["高计_Ch5_2024", "  概率论 第2讲  ", "a", "", "x" * 600, "A:B/C\\D?E"]:
+            result = sanitize_collection_name(name)
+            assert _re.fullmatch(r"[a-zA-Z0-9._-]{3,512}", result), f"{name!r} -> {result!r}"
