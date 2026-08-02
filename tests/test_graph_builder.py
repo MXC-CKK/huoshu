@@ -466,3 +466,97 @@ class TestSplitChapters:
     def test_empty_clusters_returns_empty(self) -> None:
         """空簇列表返回空。"""
         assert _split_chapters("text", []) == []
+
+
+# ── _salvage_partial_json / _call_llm_json 测试 ──────────────────────
+
+
+class TestSalvagePartialJson:
+    """_salvage_partial_json() 截断抢救测试。"""
+
+    def test_complete_array_untouched(self) -> None:
+        """完整 JSON 数组也返回所有对象（不误伤）。"""
+        from learning_agent.build.graph_builder import _salvage_partial_json
+
+        text = '[{"id": "a"}, {"id": "b"}]'
+        result = _salvage_partial_json(text)
+        assert result == [{"id": "a"}, {"id": "b"}]
+
+    def test_truncated_array_salvages_complete_objects(self) -> None:
+        """截断数组抢救出完整对象。"""
+        from learning_agent.build.graph_builder import _salvage_partial_json
+
+        text = '[{"id": "a", "title": "x"}, {"id": "b", "title": "White Noise as'
+        result = _salvage_partial_json(text)
+        assert result == [{"id": "a", "title": "x"}]
+
+    def test_fence_wrapped_truncated(self) -> None:
+        """带 ```json 围栏的截断响应也能抢救。"""
+        from learning_agent.build.graph_builder import _salvage_partial_json
+
+        text = '```json\n[{"id": "a"}, {"id": "b", "ti'
+        result = _salvage_partial_json(text)
+        assert result == [{"id": "a"}]
+
+    def test_no_objects_returns_none(self) -> None:
+        """无完整对象时返回 None。"""
+        from learning_agent.build.graph_builder import _salvage_partial_json
+
+        assert _salvage_partial_json('[{') is None
+        assert _salvage_partial_json('not json at all') is None
+        assert _salvage_partial_json('') is None
+
+    def test_nested_string_braces_not_confused(self) -> None:
+        """字符串内的花括号不影响平衡判定。"""
+        from learning_agent.build.graph_builder import _salvage_partial_json
+
+        text = '[{"id": "a", "note": "公式 {x}"}, {"id": "b'
+        result = _salvage_partial_json(text)
+        assert result == [{"id": "a", "note": "公式 {x}"}]
+
+
+class TestCallLlmJson:
+    """_call_llm_json() 重试与抢救测试。"""
+
+    def test_valid_response_parsed(self) -> None:
+        """正常 JSON 直接返回。"""
+        from learning_agent.build.graph_builder import _call_llm_json
+
+        mock_llm = MagicMock()
+        mock_llm.chat.return_value = '[{"id": "a"}]'
+        result = _call_llm_json(mock_llm, "sys", "user")
+        assert result == [{"id": "a"}]
+        assert mock_llm.chat.call_count == 1
+
+    def test_truncated_no_salvage_then_retry_succeeds(self) -> None:
+        """截断且无法抢救时重试，第二次正常。"""
+        from learning_agent.build.graph_builder import _call_llm_json
+
+        mock_llm = MagicMock()
+        mock_llm.chat.side_effect = [
+            '[{"id": "a',  # 截断且无完整对象
+            '[{"id": "c"}]',  # 重试成功
+        ]
+        result = _call_llm_json(mock_llm, "sys", "user")
+        assert result == [{"id": "c"}]
+        assert mock_llm.chat.call_count == 2
+
+    def test_truncated_salvaged_without_retry(self) -> None:
+        """截断但能抢救出对象时直接返回（不浪费重试）。"""
+        from learning_agent.build.graph_builder import _call_llm_json
+
+        mock_llm = MagicMock()
+        mock_llm.chat.return_value = '[{"id": "a"}, {"id": "b'
+        result = _call_llm_json(mock_llm, "sys", "user")
+        assert result == [{"id": "a"}]
+        assert mock_llm.chat.call_count == 1
+
+    def test_raises_after_all_retries(self) -> None:
+        """全部失败后抛出 RuntimeError。"""
+        from learning_agent.build.graph_builder import _call_llm_json
+
+        mock_llm = MagicMock()
+        mock_llm.chat.return_value = "garbage"
+        with pytest.raises(RuntimeError, match="解析失败"):
+            _call_llm_json(mock_llm, "sys", "user", retries=2)
+        assert mock_llm.chat.call_count == 2

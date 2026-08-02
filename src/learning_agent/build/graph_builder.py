@@ -40,6 +40,10 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CLUSTER_SCAN_CHARS = 12000  # 目录/前言扫描字符上限
 
+# 单次 LLM 抽取的文本上限。实测 deepseek 对 >5000 字符输入+长 JSON 输出
+# 组合不稳定（返回空/残缺响应），4000 字符内可靠。
+MAX_EXTRACT_CHARS = 4000
+
 # 章/节检测正则（中英文兼容）
 _CHAPTER_RE = re.compile(
     r"(第[一二三四五六七八九十百\d]+章|"
@@ -66,6 +70,9 @@ _TYPE_DEFAULT_MODE: dict[str, str] = {
     "section": "blackbox",
     "exercise": "blackbox",
 }
+
+# 单次抽取知识点数量上限（实测输出超过 ~10 个条目后模型容易截断）
+MAX_ITEMS_PER_CALL = 8
 
 
 # ── 环境变量解析 ─────────────────────────────────────────────────────
@@ -187,6 +194,66 @@ def _extract_balanced_json(text: str) -> str:
     return text
 
 
+def _salvage_partial_json(text: str) -> list[Any] | None:
+    """从被截断的 JSON 数组中抢救完整对象。
+
+    实测 LLM（deepseek）生成长 JSON 数组时偶尔中途截断（无 finish_reason
+    提前停止），json.loads 必然失败。本函数逐个提取数组中已完整的对象，
+    至少抢救出 1 个则返回，否则返回 None。
+
+    Args:
+        text: LLM 原始输出（可能是截断的 JSON 数组）。
+
+    Returns:
+        完整对象列表；无法抢救时返回 None。
+    """
+    cleaned = text.strip()
+    if "```json" in cleaned:
+        cleaned = cleaned.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in cleaned:
+        cleaned = cleaned.split("```", 1)[1].split("```", 1)[0].strip()
+
+    if not cleaned.startswith("["):
+        return None
+
+    objects: list[Any] = []
+    pos = 0
+    while True:
+        start = cleaned.find("{", pos)
+        if start < 0:
+            break
+        # 找该对象的平衡右括号（忽略字符串内括号）
+        depth = 0
+        in_string = False
+        escape = False
+        end = start
+        while end < len(cleaned):
+            ch = cleaned[end]
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = not in_string
+            elif not in_string:
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        break
+            end += 1
+        if depth != 0 or end >= len(cleaned):
+            break  # 该对象不完整 → 后面的也都不完整
+        try:
+            objects.append(json.loads(cleaned[start : end + 1]))
+        except json.JSONDecodeError:
+            pass
+        pos = end + 1
+
+    return objects if objects else None
+
+
 # ── LLM 调用封装 ─────────────────────────────────────────────────────
 
 
@@ -231,6 +298,58 @@ def _call_llm(
     raise RuntimeError(f"LLM 调用失败（已重试）: {last_error}")
 
 
+def _call_llm_json(
+    llm: Any,
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    max_tokens: int = 4096,
+    retries: int = 3,
+) -> dict[str, Any] | list[Any]:
+    """调用 LLM 并容错解析 JSON，解析失败自动重试。
+
+    应对 LLM 输出的两类不稳定：
+    1. 空响应/调用失败 → _call_llm 内部已重试
+    2. 截断/格式损坏 → 每次尝试先 parse_llm_json，失败后尝试
+       _salvage_partial_json 抢救完整对象，仍失败则重试
+
+    Args:
+        llm: LLMClient 实例。
+        system_prompt: 系统提示。
+        user_prompt: 用户提示。
+        max_tokens: 最大输出 token。
+        retries: 总尝试次数。
+
+    Returns:
+        解析后的 dict 或 list。
+
+    Raises:
+        RuntimeError: 所有尝试均失败。
+    """
+    last_err: Exception | None = None
+    for attempt in range(retries):
+        try:
+            raw = _call_llm(llm, system_prompt, user_prompt, max_tokens=max_tokens)
+            try:
+                return parse_llm_json(raw)
+            except ValueError:
+                salvaged = _salvage_partial_json(raw)
+                if salvaged is not None:
+                    logger.warning(
+                        "LLM 输出截断，抢救出 %d 个完整对象 (attempt %d/%d)",
+                        len(salvaged), attempt + 1, retries,
+                    )
+                    return salvaged
+                raise
+        except (ValueError, RuntimeError) as exc:
+            last_err = exc
+            logger.warning(
+                "LLM JSON 解析失败 (attempt %d/%d): %s", attempt + 1, retries, exc
+            )
+
+    raise RuntimeError(f"LLM 输出解析失败（已重试 {retries} 次）: {last_err}")
+
+
 # ── 章节抽取 ─────────────────────────────────────────────────────────
 
 
@@ -254,8 +373,8 @@ def extract_clusters(text: str, llm: Any) -> list[dict[str, str]]:
         f"教材文本:\n{text[:DEFAULT_CLUSTER_SCAN_CHARS]}"
     )
 
-    raw = _call_llm(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=2048)
-    result = parse_llm_json(raw)
+    raw = _call_llm_json(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=2048)
+    result = raw
 
     if not isinstance(result, list):
         raise TypeError(f"extract_clusters 期望 JSON 数组，实际: {type(result).__name__}")
@@ -312,11 +431,12 @@ def extract_items(
         "## 输出格式\n"
         '输出 JSON 数组（不要 Markdown 围栏）:\n'
         '[{"id": "...", "title": "...", "type": "...", "mode": "...", "source": "...", "note": "..."}, ...]\n\n'
-        f"## 教材文本\n{chunk_text[:8000]}"
+        f"## 输出要求\n最多输出 {MAX_ITEMS_PER_CALL} 个最重要的知识点。若本段知识点更多，只输出最重要的 {MAX_ITEMS_PER_CALL} 个（其余会在后续分段继续抽取）。\n\n"
+        f"## 教材文本\n{chunk_text[:MAX_EXTRACT_CHARS]}"
     )
 
-    raw = _call_llm(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=4096)
-    result = parse_llm_json(raw)
+    raw = _call_llm_json(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=4096)
+    result = raw
 
     if not isinstance(result, list):
         raise TypeError(f"extract_items 期望 JSON 数组，实际: {type(result).__name__}")
@@ -394,8 +514,8 @@ def infer_edges(items: list[dict[str, Any]], llm: Any) -> dict[str, list[list[st
         f"## 知识点列表\n{items_text}"
     )
 
-    raw = _call_llm(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=4096)
-    result = parse_llm_json(raw)
+    raw = _call_llm_json(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=4096)
+    result = raw
 
     if not isinstance(result, dict):
         raise TypeError(f"infer_edges 期望 JSON 对象，实际: {type(result).__name__}")
@@ -668,8 +788,8 @@ def build_bookmap_from_pdf(
         if progress:
             progress(f"抽取知识点: {cluster_title}", idx + 1, len(chapter_chunks))
 
-        # 单章 >8000 字符按节再切
-        sub_chunks = _split_subsections(chunk_text, max_chars=8000)
+        # 单章 >4000 字符按节再切（保证每次 LLM 调用输入在可靠区间）
+        sub_chunks = _split_subsections(chunk_text, max_chars=MAX_EXTRACT_CHARS)
 
         for sub_idx, sub_text in enumerate(sub_chunks):
             try:
@@ -765,7 +885,7 @@ def build_bookmap_from_pdf(
     }
 
 
-def _split_subsections(text: str, max_chars: int = 8000) -> list[str]:
+def _split_subsections(text: str, max_chars: int = MAX_EXTRACT_CHARS) -> list[str]:
     """将长文本按节或自然段落边界切分为子块。
 
     Args:
