@@ -189,7 +189,7 @@ class TestExtractClusters:
         """LLM 返回非数组时抛出 ValueError。"""
         mock_llm = MagicMock()
         mock_llm.chat.return_value = json.dumps({"not": "a list"})
-        with pytest.raises(ValueError, match="JSON 数组"):
+        with pytest.raises(TypeError, match="JSON 数组"):
             extract_clusters("text", mock_llm)
 
 
@@ -235,7 +235,7 @@ class TestExtractItems:
         """LLM 返回非数组时抛出 ValueError。"""
         mock_llm = MagicMock()
         mock_llm.chat.return_value = json.dumps({"items": []})
-        with pytest.raises(ValueError, match="JSON 数组"):
+        with pytest.raises(TypeError, match="JSON 数组"):
             extract_items("ch", "text", mock_llm, prefix="ch1")
 
 
@@ -285,7 +285,7 @@ class TestInferEdges:
         """LLM 返回非对象时抛出 ValueError。"""
         mock_llm = MagicMock()
         mock_llm.chat.return_value = json.dumps([1, 2, 3])
-        with pytest.raises(ValueError, match="JSON 对象"):
+        with pytest.raises(TypeError, match="JSON 对象"):
             infer_edges([], mock_llm)
 
 

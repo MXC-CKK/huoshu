@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -263,6 +264,36 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
         _save_bookmap(save_name)
 
 
+def _sanitize_save_name(name: str) -> str:
+    """清洗保存文件名，防路径穿越。
+
+    Args:
+        name: 用户输入的文件名（不含扩展名）。
+
+    Returns:
+        安全的文件名（仅保留字母/数字/中文/连字符/下划线/空格）。
+
+    Raises:
+        ValueError: 清洗后为空。
+    """
+    # 只取 basename（防路径穿越：Path(name).name）
+    safe = Path(name).name
+
+    # 移除扩展名（用户可能误输入 .json）
+    if safe.lower().endswith(".json"):
+        safe = safe[:-5]
+
+    # 去除所有路径分隔符和非法字符，只保留安全字符集
+    safe = re.sub(r"[^\w一-鿿\- ]", "_", safe)
+
+    # 去除首尾空白和点
+    safe = safe.strip(". ")
+
+    if not safe:
+        raise ValueError("文件名无效（清洗后为空）")
+    return safe
+
+
 def _save_bookmap(name: str) -> None:
     """保存生成的图谱到文件。"""
     from learning_agent.build.graph_builder import resolve_bookmap_dir
@@ -272,6 +303,13 @@ def _save_bookmap(name: str) -> None:
 
     if bookmap is None:
         st.error("没有可保存的图谱，请先生成。")
+        return
+
+    # 清洗文件名（防路径穿越）
+    try:
+        safe_name = _sanitize_save_name(name)
+    except ValueError:
+        st.error("文件名无效，请使用字母/数字/中文/连字符/下划线。")
         return
 
     # 应用编辑
@@ -307,17 +345,24 @@ def _save_bookmap(name: str) -> None:
     save_dir.mkdir(parents=True, exist_ok=True)
 
     # 去重：同名文件追加序号
-    dest = save_dir / f"{name}.json"
+    dest = save_dir / f"{safe_name}.json"
     counter = 1
     while dest.exists():
-        dest = save_dir / f"{name}-{counter}.json"
+        dest = save_dir / f"{safe_name}-{counter}.json"
         counter += 1
 
-    dest.write_text(
+    # 二次防护：确保解析后路径仍在 save_dir 内
+    resolved_dest = dest.resolve()
+    resolved_dir = save_dir.resolve()
+    if not str(resolved_dest).startswith(str(resolved_dir)):
+        st.error("文件名包含非法路径字符，拒绝保存。")
+        return
+
+    resolved_dest.write_text(
         json.dumps(bookmap, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    st.success(f"✅ 图谱已保存到 `{dest}`")
+    st.success(f"✅ 图谱已保存到 `{resolved_dest}`")
     st.caption("前往「📊 知识图谱」页加载该文件即可浏览。")
 
 

@@ -28,10 +28,10 @@ import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +224,7 @@ def _call_llm(
             if response and response.strip():
                 return response.strip()
             last_error = RuntimeError("LLM 返回空响应")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - 重试机制需要捕获所有异常
             last_error = exc
             logger.warning("LLM 调用失败 (attempt %d/2): %s", attempt + 1, exc)
 
@@ -258,7 +258,7 @@ def extract_clusters(text: str, llm: Any) -> list[dict[str, str]]:
     result = parse_llm_json(raw)
 
     if not isinstance(result, list):
-        raise ValueError(f"extract_clusters 期望 JSON 数组，实际: {type(result).__name__}")
+        raise TypeError(f"extract_clusters 期望 JSON 数组，实际: {type(result).__name__}")
 
     # 校验并补全
     clusters: list[dict[str, str]] = []
@@ -319,7 +319,7 @@ def extract_items(
     result = parse_llm_json(raw)
 
     if not isinstance(result, list):
-        raise ValueError(f"extract_items 期望 JSON 数组，实际: {type(result).__name__}")
+        raise TypeError(f"extract_items 期望 JSON 数组，实际: {type(result).__name__}")
 
     items: list[dict[str, Any]] = []
     for i, item in enumerate(result):
@@ -398,7 +398,7 @@ def infer_edges(items: list[dict[str, Any]], llm: Any) -> dict[str, list[list[st
     result = parse_llm_json(raw)
 
     if not isinstance(result, dict):
-        raise ValueError(f"infer_edges 期望 JSON 对象，实际: {type(result).__name__}")
+        raise TypeError(f"infer_edges 期望 JSON 对象，实际: {type(result).__name__}")
 
     prerequisites = result.get("prerequisites", [])
     related = result.get("related", [])
@@ -407,15 +407,25 @@ def infer_edges(items: list[dict[str, Any]], llm: Any) -> dict[str, list[list[st
     valid_ids = {it["id"] for it in items}
     clean_pairs: list[list[str]] = []
     for pair in prerequisites:
-        if isinstance(pair, list) and len(pair) == 2:
-            if pair[0] in valid_ids and pair[1] in valid_ids and pair[0] != pair[1]:
-                clean_pairs.append([str(pair[0]), str(pair[1])])
+        if (
+            isinstance(pair, list)
+            and len(pair) == 2
+            and pair[0] in valid_ids
+            and pair[1] in valid_ids
+            and pair[0] != pair[1]
+        ):
+            clean_pairs.append([str(pair[0]), str(pair[1])])
 
     clean_related: list[list[str]] = []
     for pair in related:
-        if isinstance(pair, list) and len(pair) == 2:
-            if pair[0] in valid_ids and pair[1] in valid_ids and pair[0] != pair[1]:
-                clean_related.append([str(pair[0]), str(pair[1])])
+        if (
+            isinstance(pair, list)
+            and len(pair) == 2
+            and pair[0] in valid_ids
+            and pair[1] in valid_ids
+            and pair[0] != pair[1]
+        ):
+            clean_related.append([str(pair[0]), str(pair[1])])
 
     logger.info("推断 %d 条前置边, %d 条相关边", len(clean_pairs), len(clean_related))
     return {"prerequisites": clean_pairs, "related": clean_related}
@@ -673,7 +683,7 @@ def build_bookmap_from_pdf(
                 for it in items:
                     it["cluster"] = cluster_id
                 all_items.extend(items)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - 单章失败不中断整体构建
                 sub_label = (
                     f"第{sub_idx + 1}/{len(sub_chunks)}段" if len(sub_chunks) > 1 else ""
                 )
@@ -717,7 +727,7 @@ def build_bookmap_from_pdf(
     meta = {
         "source": pdf_path.stem,
         "source_files": [str(pdf_path)],
-        "built": date.today().isoformat(),
+        "built": datetime.now(UTC).date().isoformat(),
         "status": "draft-待校对",
         "extraction_method": "四层分解 (Domain→Cluster→Item) + 原子性三标准 + QUERY 边推断",
     }
