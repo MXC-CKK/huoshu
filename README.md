@@ -9,7 +9,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
-[![Tests](https://img.shields.io/badge/tests-349%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-358%20passed-brightgreen.svg)](tests/)
 
 > 📖 **新手上路？先看 [使用教程](docs/使用教程.md)** — 5 分钟上手 + 完整功能指南 + 配置参考 + 常见问题
 
@@ -69,7 +69,7 @@ huoshu/
 │   │   └── pages_settings.py  # 模型设置页
 │   ├── llm.py          # LLM 客户端 (DeepSeek/OpenAI/Ollama)
 │   └── data/           # 数据工具
-├── tests/              # 349 tests
+├── tests/              # 358 tests
 ├── examples/           # 示例图谱
 └── pyproject.toml
 ```
@@ -144,10 +144,10 @@ huoshu
 
 ### 首次使用 Checklist
 
-1. **Ollama 就绪**（教材检索需要）：启动 Ollama 后运行 `ollama pull nomic-embed-text`
+1. **配置 LLM**（AI 建图谱必需）：设置页填 DeepSeek API Key + 测试连接；或配 Ollama 本地
 2. **准备教材 PDF**：打开检索页直接拖拽上传 PDF（推荐）；也可手动放入 `~/.huoshu/pdf/`（Windows: `C:\Users\<你>\.huoshu\pdf\`）
-3. **准备图谱文件**：bookmap JSON 放到 `./bookmap/` 或 `~/.huoshu/bookmap/`（或用 `HUOSHU_BOOKMAP_DIR` 指定），图谱页侧边栏即可选择
-4. **配置 LLM**（可选）：见上，用于 Socratic 教学
+3. **生成图谱**：AI 建图谱页 → 选 PDF → 选目标 → 点生成 → 校对 → 保存（图谱页/学习页/复习页立即可用）
+4. **Ollama 就绪**（教材检索需要）：启动 Ollama 后运行 `ollama pull nomic-embed-text`
 
 ### 单页独立启动（高级用法）
 
