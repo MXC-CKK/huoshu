@@ -9,7 +9,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
-[![Tests](https://img.shields.io/badge/tests-295%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-310%20passed-brightgreen.svg)](tests/)
 
 ---
 
@@ -63,7 +63,7 @@ huoshu/
 │   │   └── pages_settings.py  # 模型设置页
 │   ├── llm.py          # LLM 客户端 (DeepSeek/OpenAI/Ollama)
 │   └── data/           # 数据工具
-├── tests/              # 295 tests
+├── tests/              # 310 tests
 ├── examples/           # 示例图谱
 └── pyproject.toml
 ```
@@ -138,7 +138,7 @@ huoshu
 ### 首次使用 Checklist
 
 1. **Ollama 就绪**（教材检索需要）：启动 Ollama 后运行 `ollama pull nomic-embed-text`
-2. **放入教材 PDF**：复制 PDF 到 `~/.huoshu/pdf/`（Windows: `C:\Users\<你>\.huoshu\pdf\`），或用 `HUOSHU_PDF_DIR` 指定目录
+2. **准备教材 PDF**：打开检索页直接拖拽上传 PDF（推荐）；也可手动放入 `~/.huoshu/pdf/`（Windows: `C:\Users\<你>\.huoshu\pdf\`）
 3. **准备图谱文件**：bookmap JSON 放到 `./bookmap/` 或 `~/.huoshu/bookmap/`（或用 `HUOSHU_BOOKMAP_DIR` 指定），图谱页侧边栏即可选择
 4. **配置 LLM**（可选）：见上，用于 Socratic 教学
 
@@ -190,8 +190,8 @@ pytest tests/ -v
 ### 4. 教材检索
 
 在教材检索页中（需本地运行 Ollama）：
-1. 将 PDF 教材放入 `~/.huoshu/pdf/`（可通过 `HUOSHU_PDF_DIR` 环境变量修改）
-2. 切换到「📥 入库」Tab，选择 PDF → 设置分块参数 → 点击入库
+1. 切换到「📥 入库」Tab → 拖拽上传 PDF（推荐），或从已放入 `~/.huoshu/pdf/` 的目录中选择
+2. 设置集合名称和分块参数 → 点击入库（自动向量化存入 ChromaDB）
 3. 切换到「🔍 检索」Tab，输入自然语言问题 → 查看原文段落及页码引用
 4. 可在「🗂 集合管理」Tab 查看统计信息或删除不再需要的集合
 
