@@ -143,6 +143,11 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
             status.update(label=f"❌ 生成失败: {exc}", state="error")
             st.error(f"图谱生成失败: {exc}")
             st.caption(
+                "💡 建议：① 到「⚙️ 模型设置」把模型切换为 deepseek-chat（非推理模型，"
+                "结构化输出更稳定）后重试；② 换一本更小的 PDF 或按章节拆分；③ 稍后再试（"
+                "LLM 服务偶发不稳定）"
+            )
+            st.caption(
                 "请确认 LLM 配置正确（设置页可测试连接），"
                 "PDF 文件完整且含章节标题。"
             )

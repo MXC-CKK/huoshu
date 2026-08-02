@@ -54,9 +54,10 @@ _CHAPTER_RE = re.compile(
 )
 
 # LLM 系统提示：强调 JSON 格式约束
+# ⚠️ 实测：提示词越啰嗦，推理模型（deepseek-v4-flash）思考越长，
+# 可能耗尽思考预算返回空内容（finish=length）。必须保持精简直接。
 _SYSTEM_JSON_PROMPT = (
-    "你是一位严谨的知识图谱构建助手。请严格输出 JSON，不要任何 Markdown 围栏、"
-    "不要注释、不要额外解释。只输出要求的 JSON 结构。"
+    "你只输出严格合法的 JSON，不要 Markdown 围栏、注释或任何额外文字。"
 )
 
 # 知识点类型 → 默认 mode 建议
@@ -262,7 +263,7 @@ def _call_llm(
     system_prompt: str,
     user_prompt: str,
     *,
-    max_tokens: int = 4096,
+    max_tokens: int = 8192,
 ) -> Any:
     """调用 LLM 并返回原始文本，带重试。
 
@@ -303,7 +304,7 @@ def _call_llm_json(
     system_prompt: str,
     user_prompt: str,
     *,
-    max_tokens: int = 4096,
+    max_tokens: int = 8192,
     retries: int = 3,
 ) -> dict[str, Any] | list[Any]:
     """调用 LLM 并容错解析 JSON，解析失败自动重试。
@@ -495,22 +496,13 @@ def infer_edges(items: list[dict[str, Any]], llm: Any) -> dict[str, list[list[st
     items_text = "\n".join(item_summaries)
 
     prompt = (
-        "请推断下列知识点之间的依赖关系。\n\n"
-        "## 前置依赖边 (prerequisites)\n"
-        '核心问题：「掌握 b 是否逻辑必然蕴含掌握 a？」\n'
-        "- 只建逻辑必要边，「有帮助但可跳过」不是边\n"
-        "- 置信度 ≥0.6 才收录\n"
-        "- 不要建传递依赖（a→b→c 只需 a→b 和 b→c，不要 a→c）\n\n"
-        "## 相关边 (related)\n"
-        "- 易混概念（confusable）：容易混淆的知识点对\n"
-        "- 同现概念（cooccurring）：经常一起出现的知识点\n"
-        "- 类比对比：相似或对立的知识点对\n\n"
-        "## 输出格式\n"
-        '输出一个 JSON 对象（不要 Markdown 围栏）:\n'
-        '{\n'
-        '  "prerequisites": [["前置id", "后置id"], ...],\n'
-        '  "related": [["id_a", "id_b"], ...]\n'
-        '}\n\n'
+        "根据知识点列表推断依赖边，输出 JSON 对象:\n"
+        '{"prerequisites": [["前置id", "后置id"]], "related": [["a", "b"]]}\n\n'
+        "规则:\n"
+        "- prerequisites: 只有「掌握 b 逻辑必然需要先掌握 a」才建边 a→b；"
+        "置信度<0.6 不建；不建传递依赖（a→b→c 只需 a→b 和 b→c）\n"
+        "- related: 易混或常同现的知识点对\n"
+        "- 只引用列表中存在的 id\n\n"
         f"## 知识点列表\n{items_text}"
     )
 
@@ -763,7 +755,10 @@ def build_bookmap_from_pdf(
     # ── Step 2: 抽取章节 ──
     if progress:
         progress("抽取目录结构", 0, 0)
-    clusters = extract_clusters(first_pages_text, llm)
+    try:
+        clusters = extract_clusters(first_pages_text, llm)
+    except Exception as exc:
+        raise RuntimeError(f"目录抽取失败: {exc}") from exc
     if not clusters:
         raise ValueError("未能从教材中抽取到章节结构，请确认 PDF 包含目录或章节标题")
 
@@ -808,7 +803,6 @@ def build_bookmap_from_pdf(
                     f"第{sub_idx + 1}/{len(sub_chunks)}段" if len(sub_chunks) > 1 else ""
                 )
                 failed_chapters.append(f"{cluster_title} {sub_label}: {exc}")
-                logger.warning("知识点抽取失败: %s %s", cluster_title, exc)
 
     if not all_items:
         raise ValueError(
@@ -819,7 +813,12 @@ def build_bookmap_from_pdf(
     # ── Step 5: 推断边 ──
     if progress:
         progress("推断依赖边", 0, 0)
-    edges = infer_edges(all_items, llm)
+    try:
+        edges = infer_edges(all_items, llm)
+    except Exception as exc:  # noqa: BLE001 - 边推断失败降级交付（无依赖边的孤立图仍可用）
+        # 边推断失败不阻塞交付：图谱仍可用（无前置边的孤立图）
+        logger.warning("边推断失败，将以无依赖边交付: %s", exc)
+        edges = {"prerequisites": [], "related": []}
 
     # ── Step 6: 组装 ──
     if progress:
@@ -943,4 +942,15 @@ def _split_subsections(text: str, max_chars: int = MAX_EXTRACT_CHARS) -> list[st
             buf = para
     if buf:
         chunks.append(buf)
-    return chunks if chunks else [text]
+
+    # 兜底：仍超过 max_chars 的块按固定大小切（PDF 提取文本常无段落分隔，
+    # 整章会变成单个超大段落 → 必须强制切分，否则 extract_items 内部截断丢内容）
+    final_chunks: list[str] = []
+    for ch in chunks:
+        if len(ch) <= max_chars:
+            final_chunks.append(ch)
+        else:
+            final_chunks.extend(
+                ch[i : i + max_chars] for i in range(0, len(ch), max_chars)
+            )
+    return final_chunks if final_chunks else [text]
