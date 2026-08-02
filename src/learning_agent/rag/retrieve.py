@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,35 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_TOP_K = 5
 DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"
+DEFAULT_OLLAMA_URL = "http://localhost:11434/api/embeddings"
+
+
+# ── 环境变量解析 ──────────────────────────────────────────────────────
+
+
+def resolve_ollama_url() -> str:
+    """返回 Ollama embedding API URL。
+
+    优先级: 环境变量 HUOSHU_OLLAMA_URL > 默认 localhost:11434。
+
+    Returns:
+        Ollama embedding API 完整 URL。
+    """
+    return os.environ.get("HUOSHU_OLLAMA_URL", DEFAULT_OLLAMA_URL)
+
+
+def resolve_chroma_dir() -> str:
+    """返回 ChromaDB 持久化目录。
+
+    优先级: 环境变量 HUOSHU_CHROMA_DIR > 默认 ~/.huoshu/chroma。
+
+    Returns:
+        ChromaDB 持久化目录的绝对路径字符串。
+    """
+    return os.environ.get(
+        "HUOSHU_CHROMA_DIR",
+        str(Path.home() / ".huoshu" / "chroma"),
+    )
 
 
 # ── 数据类 ───────────────────────────────────────────────────────────
@@ -67,6 +97,7 @@ def open_collection(
     persist_dir: str = "output/chroma",
     *,
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+    ollama_url: str | None = None,
 ) -> Any:
     """打开已有的 ChromaDB 集合。
 
@@ -74,6 +105,7 @@ def open_collection(
         collection_name: 集合名称。
         persist_dir: ChromaDB 持久化目录。
         embedding_model: Ollama embedding 模型名。
+        ollama_url: Ollama embedding API URL，为 None 时调用 resolve_ollama_url()。
 
     Returns:
         ChromaDB collection 对象。
@@ -95,7 +127,7 @@ def open_collection(
 
     ef = embedding_functions.OllamaEmbeddingFunction(
         model_name=embedding_model,
-        url="http://localhost:11434/api/embeddings",
+        url=ollama_url or resolve_ollama_url(),
     )
 
     try:
@@ -149,6 +181,36 @@ def collection_stats(collection: Any) -> dict[str, Any]:
         "count": collection.count(),
         "metadata": collection.metadata,
     }
+
+
+def delete_collection(collection_name: str, persist_dir: str) -> None:
+    """删除 ChromaDB 集合。
+
+    Args:
+        collection_name: 要删除的集合名称。
+        persist_dir: ChromaDB 持久化目录。
+
+    Raises:
+        RuntimeError: 集合不存在或删除失败。
+    """
+    import chromadb
+
+    persist_path = Path(persist_dir)
+    if not persist_path.exists():
+        raise RuntimeError(f"ChromaDB 持久化目录不存在: {persist_dir}")
+
+    client = chromadb.PersistentClient(
+        path=persist_dir,
+        settings=chromadb.Settings(anonymized_telemetry=False),  # type: ignore[attr-defined]
+    )
+
+    try:
+        client.delete_collection(collection_name)
+        logger.info("删除集合 '%s'", collection_name)
+    except Exception as exc:
+        raise RuntimeError(
+            f"删除集合 '{collection_name}' 失败: {exc}"
+        ) from exc
 
 
 # ── 检索 ──────────────────────────────────────────────────────────────

@@ -9,7 +9,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
-[![Tests](https://img.shields.io/badge/tests-275%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-295%20passed-brightgreen.svg)](tests/)
 
 ---
 
@@ -33,9 +33,10 @@
 |------|------|
 | 📊 **知识图谱可视化** | 交互式 vis.js 图谱，白箱蓝色/黑箱琥珀色，掌握度热力边框，点击节点查看详情 |
 | 📖 **学习会话** | 图谱导航（下钻/返回）、Socratic LLM 问答、三栏迷航（已完成/剩余/推荐） |
+| 📖 **教材检索** | 自然语言提问 → RAG 语义检索 → 返回教材原文+页码引用，支持 PDF 入库与集合管理 |
 | 🔁 **间隔复习** | 到期知识点自适应出题（基础/理解/应用），答题后自动更新掌握度并重排复习日期 |
-| 🔍 **RAG 教材检索** | PDF 解析分块 → ChromaDB 向量化 → 语义检索返回原文+页码 |
-| 🤖 **LLM 可配置** | DeepSeek / OpenAI / Ollama 统一接口，通过环境变量切换 |
+| 🔍 **RAG 教材检索** | PDF 解析分块 → ChromaDB 向量化 → 语义检索返回原文+页码（CLI / 库可用） |
+| 🤖 **LLM 可配置** | DeepSeek / OpenAI / Ollama 统一接口，通过环境变量或设置页切换 |
 
 ---
 
@@ -58,10 +59,11 @@ huoshu/
 │   │   ├── review_engine.py   # 复习引擎
 │   │   ├── pages_graph.py     # 图谱可视化页
 │   │   ├── pages_study.py     # 学习会话页
+│   │   ├── pages_search.py    # 教材检索页
 │   │   └── pages_review.py    # 间隔复习页
 │   ├── llm.py          # LLM 客户端 (DeepSeek/OpenAI/Ollama)
 │   └── data/           # 数据工具
-├── tests/              # 275 tests
+├── tests/              # 295 tests
 ├── examples/           # 示例图谱
 └── pyproject.toml
 ```
@@ -114,6 +116,9 @@ streamlit run src/learning_agent/ui/pages_review.py
 # PDF 入库 + 检索（CLI）
 python -m learning_agent.rag.cli ingest textbook.pdf --name mybook
 python -m learning_agent.rag.cli search "大数定律证明" --name mybook
+
+# 教材检索页（Streamlit UI）
+streamlit run src/learning_agent/ui/pages_search.py
 ```
 
 ### 运行测试
@@ -145,7 +150,15 @@ pytest tests/ -v
 - 下钻知识点时自动保存 breadcrumb，随时返回
 - 提问时 LLM 用 Socratic 方法引导，锚定教材原文
 
-### 4. 复习
+### 4. 教材检索
+
+在教材检索页中（需本地运行 Ollama）：
+1. 将 PDF 教材放入 `~/.huoshu/pdf/`（可通过 `HUOSHU_PDF_DIR` 环境变量修改）
+2. 切换到「📥 入库」Tab，选择 PDF → 设置分块参数 → 点击入库
+3. 切换到「🔍 检索」Tab，输入自然语言问题 → 查看原文段落及页码引用
+4. 可在「🗂 集合管理」Tab 查看统计信息或删除不再需要的集合
+
+### 5. 复习
 
 在复习页中：
 - 系统自动筛选到期知识点

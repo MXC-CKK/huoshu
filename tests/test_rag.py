@@ -2,19 +2,36 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from learning_agent.rag.ingest import (
+    DEFAULT_OLLAMA_URL,
     MIN_CHUNK_LENGTH,
     TextChunk,
     chunk_pages,
+    create_collection,
     extract_pages,
     ingest_pdf,
+    resolve_chroma_dir,
+    resolve_ollama_url,
 )
-from learning_agent.rag.retrieve import SearchResult, format_results, query
+from learning_agent.rag.retrieve import (
+    SearchResult,
+    delete_collection,
+    format_results,
+    open_collection,
+    query,
+)
+from learning_agent.rag.retrieve import (
+    resolve_chroma_dir as retrieve_resolve_chroma_dir,
+)
+from learning_agent.rag.retrieve import (
+    resolve_ollama_url as retrieve_resolve_ollama_url,
+)
 
 # ── PDF 解析测试 ──────────────────────────────────────────────────────
 
@@ -340,3 +357,124 @@ class TestIngestPdf:
         for ch in chunks_passed:
             assert isinstance(ch, TextChunk)
             assert ch.metadata.get("source") == "test"
+
+
+# ── 环境变量解析测试 ──────────────────────────────────────────────────
+
+
+class TestResolveOllamaUrl:
+    """resolve_ollama_url() 测试。"""
+
+    def test_default(self) -> None:
+        """未设置环境变量时返回默认值。"""
+        with patch.dict(os.environ, {}, clear=True):
+            assert resolve_ollama_url() == DEFAULT_OLLAMA_URL
+
+    def test_env_override(self) -> None:
+        """HUOSHU_OLLAMA_URL 覆盖默认值。"""
+        with patch.dict(os.environ, {"HUOSHU_OLLAMA_URL": "http://custom:9999/api/embeddings"}, clear=True):
+            assert resolve_ollama_url() == "http://custom:9999/api/embeddings"
+
+    def test_retrieve_module_same_default(self) -> None:
+        """retrieve 模块的 resolve_ollama_url 与 ingest 模块行为一致。"""
+        with patch.dict(os.environ, {}, clear=True):
+            assert retrieve_resolve_ollama_url() == resolve_ollama_url()
+
+
+class TestResolveChromaDir:
+    """resolve_chroma_dir() 测试。"""
+
+    def test_default(self) -> None:
+        """未设置环境变量时返回 ~/.huoshu/chroma。"""
+        with patch.dict(os.environ, {}, clear=True):
+            assert resolve_chroma_dir() == str(Path.home() / ".huoshu" / "chroma")
+
+    def test_env_override(self) -> None:
+        """HUOSHU_CHROMA_DIR 覆盖默认值。"""
+        with patch.dict(os.environ, {"HUOSHU_CHROMA_DIR": "/custom/chroma"}, clear=True):
+            assert resolve_chroma_dir() == "/custom/chroma"
+
+    def test_retrieve_module_same_default(self) -> None:
+        """retrieve 模块的 resolve_chroma_dir 与 ingest 模块行为一致。"""
+        with patch.dict(os.environ, {}, clear=True):
+            assert retrieve_resolve_chroma_dir() == resolve_chroma_dir()
+
+
+# ── create_collection / open_collection ollama_url 参数测试 ────────────
+
+
+class TestCreateCollectionOllamaUrl:
+    """create_collection() 的 ollama_url 参数测试。"""
+
+    @patch("chromadb.PersistentClient")
+    def test_uses_default_url_when_none(self, mock_client_cls: MagicMock) -> None:
+        """ollama_url=None 时使用 resolve_ollama_url() 默认值。"""
+        with patch.dict(os.environ, {}, clear=True):
+            result = create_collection("test-coll", ollama_url=None)
+        assert result is not None
+
+    @patch("chromadb.PersistentClient")
+    def test_passes_custom_url(self, mock_client_cls: MagicMock) -> None:
+        """ollama_url 参数传递给 OllamaEmbeddingFunction。"""
+        result = create_collection("test-coll", ollama_url="http://custom:11434/api/embeddings")
+        assert result is not None
+
+    @patch("chromadb.PersistentClient")
+    def test_uses_env_var_when_none(self, mock_client_cls: MagicMock) -> None:
+        """ollama_url=None 时使用 HUOSHU_OLLAMA_URL 环境变量。"""
+        with patch.dict(os.environ, {"HUOSHU_OLLAMA_URL": "http://env:9999/api/embeddings"}, clear=True):
+            result = create_collection("test-coll", ollama_url=None)
+        assert result is not None
+
+
+class TestOpenCollectionOllamaUrl:
+    """open_collection() 的 ollama_url 参数测试。"""
+
+    @patch("chromadb.PersistentClient")
+    def test_uses_default_url_when_none(self, mock_client_cls: MagicMock) -> None:
+        """ollama_url=None 时使用默认 URL。"""
+        with (
+            patch("learning_agent.rag.retrieve.Path.exists", return_value=True),
+            patch.dict(os.environ, {}, clear=True),
+        ):
+            result = open_collection("test-coll", ollama_url=None)
+        assert result is not None
+
+    @patch("chromadb.PersistentClient")
+    def test_passes_custom_url(self, mock_client_cls: MagicMock) -> None:
+        """ollama_url 参数传递给 OllamaEmbeddingFunction。"""
+        custom_url = "http://custom:11434/api/embeddings"
+        with patch("learning_agent.rag.retrieve.Path.exists", return_value=True):
+            result = open_collection("test-coll", ollama_url=custom_url)
+        assert result is not None
+
+
+# ── delete_collection 测试 ───────────────────────────────────────────
+
+
+class TestDeleteCollection:
+    """delete_collection() 测试。"""
+
+    def test_dir_not_found_raises(self) -> None:
+        """持久化目录不存在时抛出 RuntimeError。"""
+        with pytest.raises(RuntimeError, match="持久化目录不存在"):
+            delete_collection("test-coll", "/nonexistent/path/12345")
+
+    @patch("chromadb.PersistentClient")
+    def test_deletes_collection(self, mock_client_cls: MagicMock) -> None:
+        """正常删除集合。"""
+        with patch("learning_agent.rag.retrieve.Path.exists", return_value=True):
+            delete_collection("test-coll", "/fake/persist")
+        mock_client = mock_client_cls.return_value
+        mock_client.delete_collection.assert_called_once_with("test-coll")
+
+    @patch("chromadb.PersistentClient")
+    def test_raises_on_failure(self, mock_client_cls: MagicMock) -> None:
+        """删除失败时抛出 RuntimeError。"""
+        mock_client = mock_client_cls.return_value
+        mock_client.delete_collection.side_effect = ValueError("collection not found")
+        with (
+            patch("learning_agent.rag.retrieve.Path.exists", return_value=True),
+            pytest.raises(RuntimeError, match="删除集合"),
+        ):
+            delete_collection("nonexistent", "/fake/persist")

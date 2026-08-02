@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,7 +37,36 @@ logger = logging.getLogger(__name__)
 DEFAULT_CHUNK_SIZE = 500       # 每块最大字符数（~125 tokens）
 DEFAULT_CHUNK_OVERLAP = 100    # 块间重叠字符数
 DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"  # Ollama 默认 embedding 模型
+DEFAULT_OLLAMA_URL = "http://localhost:11434/api/embeddings"
 MIN_CHUNK_LENGTH = 30          # 最短块（短于此长度合并到上一块）
+
+
+# ── 环境变量解析 ──────────────────────────────────────────────────────
+
+
+def resolve_ollama_url() -> str:
+    """返回 Ollama embedding API URL。
+
+    优先级: 环境变量 HUOSHU_OLLAMA_URL > 默认 localhost:11434。
+
+    Returns:
+        Ollama embedding API 完整 URL。
+    """
+    return os.environ.get("HUOSHU_OLLAMA_URL", DEFAULT_OLLAMA_URL)
+
+
+def resolve_chroma_dir() -> str:
+    """返回 ChromaDB 持久化目录。
+
+    优先级: 环境变量 HUOSHU_CHROMA_DIR > 默认 ~/.huoshu/chroma。
+
+    Returns:
+        ChromaDB 持久化目录的绝对路径字符串。
+    """
+    return os.environ.get(
+        "HUOSHU_CHROMA_DIR",
+        str(Path.home() / ".huoshu" / "chroma"),
+    )
 
 
 # ── 数据类 ───────────────────────────────────────────────────────────
@@ -317,6 +347,7 @@ def create_collection(
     persist_dir: str = "output/chroma",
     *,
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+    ollama_url: str | None = None,
 ) -> Any:
     """创建或获取 ChromaDB 集合并配置 embedding 函数。
 
@@ -324,6 +355,7 @@ def create_collection(
         collection_name: 集合名称（如 'econometrics'）。
         persist_dir: ChromaDB 持久化目录。
         embedding_model: Ollama embedding 模型名。
+        ollama_url: Ollama embedding API URL，为 None 时调用 resolve_ollama_url()。
 
     Returns:
         ChromaDB collection 对象。
@@ -339,7 +371,7 @@ def create_collection(
     # 使用 Ollama embedding
     ef = embedding_functions.OllamaEmbeddingFunction(
         model_name=embedding_model,
-        url="http://localhost:11434/api/embeddings",
+        url=ollama_url or resolve_ollama_url(),
     )
 
     # 删除旧集合（如果存在）以支持重新入库；不存在时 ChromaDB 抛错，忽略即可
@@ -407,6 +439,7 @@ def ingest_pdf(
     chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
     persist_dir: str = "output/chroma",
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+    ollama_url: str | None = None,
 ) -> Any:
     """一站式 PDF 入库：解析 → 分块 → 向量化 → 写 ChromaDB。
 
@@ -418,6 +451,7 @@ def ingest_pdf(
         chunk_overlap: 块间重叠量（字符数）。
         persist_dir: ChromaDB 持久化目录。
         embedding_model: Ollama embedding 模型名。
+        ollama_url: Ollama embedding API URL，为 None 时调用 resolve_ollama_url()。
 
     Returns:
         ChromaDB collection 对象（可传给 retrieve.query()）。
@@ -442,6 +476,7 @@ def ingest_pdf(
         collection_name,
         persist_dir=persist_dir,
         embedding_model=embedding_model,
+        ollama_url=ollama_url,
     )
 
     ingest_chunks(collection, chunks)
