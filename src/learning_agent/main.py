@@ -1,6 +1,7 @@
 """活书 huoshu — 统一启动入口。
 
-把图谱可视化 / 学习会话 / 间隔复习三个页面聚合为带侧边栏导航的单应用。
+把图谱可视化 / AI 建图谱 / 学习会话 / 教材检索 / 间隔复习 / 模型设置
+六个页面聚合为带侧边栏导航的单应用。
 
 用法:
     huoshu                        # 安装后直接运行（默认 8501 端口）
@@ -28,6 +29,7 @@ def _build_app() -> None:
 
     仅在 Streamlit runtime 已就绪时调用（bootstrap 重执行场景）。
     """
+    from learning_agent.ui.pages_builder import main as builder_main
     from learning_agent.ui.pages_graph import main as graph_main
     from learning_agent.ui.pages_review import main as review_main
     from learning_agent.ui.pages_search import main as search_main
@@ -42,7 +44,8 @@ def _build_app() -> None:
     )
 
     pages: list[Any] = [
-        st.Page(graph_main, title="知识图谱", icon="📊", url_path="graph", default=True),
+        st.Page(builder_main, title="AI 建图谱", icon="🤖", url_path="builder", default=True),
+        st.Page(graph_main, title="知识图谱", icon="📊", url_path="graph"),
         st.Page(study_main, title="学习会话", icon="📖", url_path="study"),
         st.Page(search_main, title="教材检索", icon="🔍", url_path="search"),
         st.Page(review_main, title="间隔复习", icon="🔁", url_path="review"),

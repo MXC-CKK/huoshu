@@ -9,7 +9,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
-[![Tests](https://img.shields.io/badge/tests-310%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-349%20passed-brightgreen.svg)](tests/)
 
 > 📖 **新手上路？先看 [使用教程](docs/使用教程.md)** — 5 分钟上手 + 完整功能指南 + 配置参考 + 常见问题
 
@@ -33,6 +33,7 @@
 
 | 模块 | 功能 |
 |------|------|
+| 🤖 **AI 建图谱** | 上传教材 → LLM 自动抽取知识图谱（章节/知识点/依赖边），校对后保存 |
 | 📊 **知识图谱可视化** | 交互式 vis.js 图谱，白箱蓝色/黑箱琥珀色，掌握度热力边框，点击节点查看详情 |
 | 📖 **学习会话** | 图谱导航（下钻/返回）、Socratic LLM 问答、三栏迷航（已完成/剩余/推荐） |
 | 📖 **教材检索** | PDF 入库 → ChromaDB 向量化 → 自然语言检索，返回原文段落 + 精确页码（CLI + Web UI） |
@@ -54,10 +55,13 @@ huoshu/
 │   │   ├── ingest.py   # PDF 解析+分块+ChromaDB 入库
 │   │   ├── retrieve.py # 语义检索+页码引用
 │   │   └── cli.py      # CLI 验证入口
+│   ├── build/           # AI 图谱构建
+│   │   └── graph_builder.py  # LLM 驱动的 PDF→bookmap 构建器
 │   ├── ui/             # UI 层 (纯逻辑引擎 + Streamlit 页面)
 │   │   ├── graph_renderer.py  # Bookmap → vis.js 转换
 │   │   ├── study_engine.py    # 学习会话引擎
 │   │   ├── review_engine.py   # 复习引擎
+│   │   ├── pages_builder.py   # AI 建图谱页
 │   │   ├── pages_graph.py     # 图谱可视化页
 │   │   ├── pages_study.py     # 学习会话页
 │   │   ├── pages_search.py    # 教材检索页
@@ -65,7 +69,7 @@ huoshu/
 │   │   └── pages_settings.py  # 模型设置页
 │   ├── llm.py          # LLM 客户端 (DeepSeek/OpenAI/Ollama)
 │   └── data/           # 数据工具
-├── tests/              # 310 tests
+├── tests/              # 349 tests
 ├── examples/           # 示例图谱
 └── pyproject.toml
 ```
@@ -127,10 +131,11 @@ huoshu
 - 源码方式两条路都行：`huoshu` 或 `streamlit run src/learning_agent/main.py`
 - 使用虚拟环境（venv/conda）的记得先激活：Linux/macOS `source .venv/bin/activate`；Windows `.venv\Scripts\activate`
 
-启动后通过**左侧边栏**在 5 个页面间切换：
+启动后通过**左侧边栏**在 6 个页面间切换：
 
 | 页面 | 功能 |
 |------|------|
+| 🤖 AI 建图谱 | 上传 PDF → AI 自动抽知识图谱 → 校对保存（新用户入口） |
 | 📊 知识图谱 | 图谱浏览、节点搜索、掌握度热力 |
 | 📖 学习会话 | Socratic 问答、下钻导航、迷航三栏 |
 | 📖 教材检索 | PDF 入库、语义检索、集合管理 |
@@ -147,10 +152,11 @@ huoshu
 ### 单页独立启动（高级用法）
 
 ```bash
-streamlit run src/learning_agent/ui/pages_graph.py   # 图谱可视化
-streamlit run src/learning_agent/ui/pages_study.py   # 学习会话
-streamlit run src/learning_agent/ui/pages_review.py  # 间隔复习
-streamlit run src/learning_agent/ui/pages_search.py  # 教材检索
+streamlit run src/learning_agent/ui/pages_builder.py  # AI 建图谱
+streamlit run src/learning_agent/ui/pages_graph.py    # 图谱可视化
+streamlit run src/learning_agent/ui/pages_study.py    # 学习会话
+streamlit run src/learning_agent/ui/pages_review.py   # 间隔复习
+streamlit run src/learning_agent/ui/pages_search.py   # 教材检索
 ```
 
 ### CLI 操作（无需 UI 的 RAG 入库/检索）
