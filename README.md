@@ -33,10 +33,9 @@
 |------|------|
 | 📊 **知识图谱可视化** | 交互式 vis.js 图谱，白箱蓝色/黑箱琥珀色，掌握度热力边框，点击节点查看详情 |
 | 📖 **学习会话** | 图谱导航（下钻/返回）、Socratic LLM 问答、三栏迷航（已完成/剩余/推荐） |
-| 📖 **教材检索** | 自然语言提问 → RAG 语义检索 → 返回教材原文+页码引用，支持 PDF 入库与集合管理 |
+| 📖 **教材检索** | PDF 入库 → ChromaDB 向量化 → 自然语言检索，返回原文段落 + 精确页码（CLI + Web UI） |
 | 🔁 **间隔复习** | 到期知识点自适应出题（基础/理解/应用），答题后自动更新掌握度并重排复习日期 |
-| 🔍 **RAG 教材检索** | PDF 解析分块 → ChromaDB 向量化 → 语义检索返回原文+页码（CLI / 库可用） |
-| 🤖 **LLM 可配置** | DeepSeek / OpenAI / Ollama 统一接口，通过环境变量或设置页切换 |
+| ⚙️ **模型设置** | DeepSeek / OpenAI / Ollama 统一配置：API Key、Base URL、代理、温度，保存即生效 |
 
 ---
 
@@ -60,7 +59,8 @@ huoshu/
 │   │   ├── pages_graph.py     # 图谱可视化页
 │   │   ├── pages_study.py     # 学习会话页
 │   │   ├── pages_search.py    # 教材检索页
-│   │   └── pages_review.py    # 间隔复习页
+│   │   ├── pages_review.py    # 间隔复习页
+│   │   └── pages_settings.py  # 模型设置页
 │   ├── llm.py          # LLM 客户端 (DeepSeek/OpenAI/Ollama)
 │   └── data/           # 数据工具
 ├── tests/              # 295 tests
@@ -104,21 +104,31 @@ LLM 未配置时，学习和复习功能仍可用（自动降级为模板引导�
 ### 启动
 
 ```bash
-# 图谱可视化
-streamlit run src/learning_agent/ui/pages_graph.py
+# 方式一：统一入口（推荐）— 启动后浏览器自动打开 http://localhost:8501，
+# 侧边栏 5 页导航：知识图谱 / 学习会话 / 教材检索 / 间隔复习 / 模型设置
+huoshu
+# 或（源码方式）
+streamlit run src/learning_agent/main.py
+```
 
-# 学习会话
-streamlit run src/learning_agent/ui/pages_study.py
+| 页面 | 功能 |
+|------|------|
+| 📊 知识图谱 | 图谱浏览、节点搜索、掌握度热力 |
+| 📖 学习会话 | Socratic 问答、下钻导航、迷航三栏 |
+| 📖 教材检索 | PDF 入库、语义检索、集合管理 |
+| 🔁 间隔复习 | 到期项自适应出题 |
+| ⚙️ 模型设置 | LLM 提供商/Key/代理配置 |
 
-# 间隔复习
-streamlit run src/learning_agent/ui/pages_review.py
+```bash
+# 方式二：单页独立启动（高级用法）
+streamlit run src/learning_agent/ui/pages_graph.py   # 图谱可视化
+streamlit run src/learning_agent/ui/pages_study.py   # 学习会话
+streamlit run src/learning_agent/ui/pages_review.py  # 间隔复习
+streamlit run src/learning_agent/ui/pages_search.py  # 教材检索
 
-# PDF 入库 + 检索（CLI）
+# PDF 入库 + 检索（CLI，无需 UI）
 python -m learning_agent.rag.cli ingest textbook.pdf --name mybook
 python -m learning_agent.rag.cli search "大数定律证明" --name mybook
-
-# 教材检索页（Streamlit UI）
-streamlit run src/learning_agent/ui/pages_search.py
 ```
 
 ### 运行测试
@@ -131,6 +141,8 @@ pytest tests/ -v
 ---
 
 ## 📖 使用指南
+
+启动后通过**左侧边栏**在 5 个页面间切换。
 
 ### 1. 准备图谱文件
 
@@ -184,7 +196,19 @@ pytest tests/ -v
 
 ## 📸 截图
 
-> 📝 待补充：图谱页、学习会话页、复习页运行截图。
+### 📊 知识图谱
+
+![知识图谱](docs/screenshots/graph.png)
+
+### 📖 学习会话
+
+![学习会话](docs/screenshots/study.png)
+
+### 🔁 间隔复习
+
+![间隔复习](docs/screenshots/review.png)
+
+> 截图来自 v0.1.x；📖 教材检索页截图待补充。
 
 ---
 
