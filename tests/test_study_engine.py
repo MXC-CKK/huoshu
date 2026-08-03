@@ -18,6 +18,7 @@ from learning_agent.ui.study_engine import (
     get_navigation_context,
     get_sources,
     locate_item,
+    mark_item_learned,
     translate_mastery,
     translate_mode,
     translate_status,
@@ -539,3 +540,48 @@ def sample_bm_stub() -> Any:
     from types import SimpleNamespace
 
     return SimpleNamespace(title="中心极限定理", source="§1.2")
+
+
+# ── 标记已学（学习进度推进） ─────────────────────────────────────────
+
+
+class TestMarkItemLearned:
+    """mark_item_learned 自评标记逻辑。"""
+
+    def test_mastered_sets_learned(self, sample_bm: Bookmap) -> None:
+        """掌握了 → learned + 0.8 + 复习日期。"""
+        item = mark_item_learned(sample_bm, "b", "mastered")
+        assert item.status == "learned"
+        assert item.mastery == 0.8
+        assert item.next_review is not None
+
+    def test_basics_sets_learned(self, sample_bm: Bookmap) -> None:
+        """基本掌握 → learned + 0.6。"""
+        item = mark_item_learned(sample_bm, "b", "basics")
+        assert item.status == "learned"
+        assert item.mastery == 0.6
+
+    def test_unsure_keeps_pending(self, sample_bm: Bookmap) -> None:
+        """还不熟 → 保持 pending，mastery 0.3，无复习日期。"""
+        item = mark_item_learned(sample_bm, "b", "unsure")
+        assert item.status == "pending"
+        assert item.mastery == 0.3
+        assert item.next_review is None
+
+    def test_invalid_level_falls_back(self, sample_bm: Bookmap) -> None:
+        """非法档位回退 basics。"""
+        item = mark_item_learned(sample_bm, "b", "nonsense")
+        assert item.status == "learned"
+        assert item.mastery == 0.6
+
+    def test_missing_item_raises(self, sample_bm: Bookmap) -> None:
+        """不存在的知识点抛 KeyError。"""
+        with pytest.raises(KeyError):
+            mark_item_learned(sample_bm, "nonexistent", "mastered")
+
+    def test_learned_item_appears_in_completed(self, sample_bm: Bookmap) -> None:
+        """标记后三栏状态立即推进（completed 增加，remaining 减少）。"""
+        mark_item_learned(sample_bm, "b", "mastered")
+        tc = compute_three_column(sample_bm)
+        completed_ids = [it.id for it, _ in tc.completed]
+        assert "b" in completed_ids

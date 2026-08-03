@@ -316,6 +316,9 @@ def _render_main_area(bm: Bookmap, session: StudySession) -> None:
             st.session_state.study_session = None
             st.rerun()
 
+    # ── 标记已学（学习进度推进：学完自评 → 图谱更新 → 推荐下一个）──
+    _render_mark_learned_area(bm, session, item)
+
     # ── 补充知识点（学习时图谱增量完善）──
     with st.expander("➕ 补充新知识点（加入图谱）", expanded=False):
         _render_add_item_area(bm, session, item)
@@ -332,6 +335,58 @@ def _render_main_area(bm: Bookmap, session: StudySession) -> None:
             role = "🧑" if msg["role"] == "user" else "🤖"
             with st.chat_message(role):
                 st.markdown(msg["content"])
+
+
+def _render_mark_learned_area(bm: Bookmap, session: StudySession, item: Any) -> None:
+    """渲染「标记已学」区域：自评掌握度 → 更新图谱 → 保存 → 推荐推进。
+
+    学习会话默认不自动改掌握度；学完一个知识点由用户自评标记，
+    标记后 status/mastery/next_review 更新并保存回图谱文件，
+    侧边栏三栏与推荐列表随即推进到下一个可学知识点。
+    """
+    from learning_agent.ui.study_engine import MASTERY_LEVELS, mark_item_learned
+
+    st.divider()
+    with st.container(border=True):
+        st.caption(
+            f"学完了「{item.title}」？标记学习状态即可推进到下一个知识点"
+            "（会更新图谱并保存）。"
+        )
+        level = st.radio(
+            "自评掌握度",
+            options=list(MASTERY_LEVELS.keys()),
+            format_func=lambda m: {
+                "mastered": "✅ 掌握了（0.8）",
+                "basics": "🟡 基本掌握（0.6）",
+                "unsure": "🔴 还不熟（0.3，不标记已学）",
+            }.get(m, m),
+            horizontal=True,
+            key="mastery_self_eval",
+        )
+
+        if st.button("💾 提交学习状态", type="primary", key="mark_learned_btn"):
+            try:
+                updated = mark_item_learned(bm, session.current_item_id, level)
+                bm_path = st.session_state.get("bookmap_path")
+                if bm_path is not None:
+                    bm.save(bm_path)
+                    saved_note = f"已保存到 `{bm_path}`"
+                else:
+                    saved_note = "⚠️ 未找到图谱文件路径，本次修改未落盘"
+
+                if updated.status == "learned":
+                    st.success(
+                        f"✅ 「{updated.title}」已标记为已学（掌握度 {updated.mastery:.0%}，"
+                        f"{updated.next_review} 复习）。{saved_note} 推荐列表已推进！"
+                    )
+                else:
+                    st.info(
+                        f"🔴 「{updated.title}」保持待学（掌握度 {updated.mastery:.0%}），"
+                        "建议再看一遍教材或继续提问。"
+                    )
+                st.rerun()
+            except Exception as exc:  # noqa: BLE001 - UI 层兜底
+                st.error(f"标记失败: {exc}")
 
 
 def _render_add_item_area(bm: Bookmap, session: StudySession, item: Any) -> None:

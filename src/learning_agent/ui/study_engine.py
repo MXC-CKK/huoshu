@@ -23,7 +23,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from learning_agent.core.graph import Bookmap, Item
@@ -831,4 +831,60 @@ def add_item_to_bookmap(
     )
     bm.items[new_id] = item
     logger.info("已补充知识点 %s（relation=%s）到图谱", new_id, relation)
+    return item
+
+
+# ── 标记已学（学习进度推进） ─────────────────────────────────────────
+
+
+# 自评掌握度档位 → mastery 值
+MASTERY_LEVELS: dict[str, float] = {
+    "mastered": 0.8,  # 掌握了
+    "basics": 0.6,    # 基本掌握
+    "unsure": 0.3,    # 还不熟（不标记已学）
+}
+
+
+def mark_item_learned(
+    bm: Bookmap,
+    item_id: str,
+    mastery_level: str,
+) -> Item:
+    """标记知识点学习状态（自评驱动，纯逻辑可测）。
+
+    学完一个知识点后由用户自评掌握度：
+    - mastered / basics → status='learned'，mastery 设为对应档位，
+      并按档位安排 next_review（3/7 天后）
+    - unsure → 保持 pending，仅更新 mastery（后续复习再提升）
+
+    Args:
+        bm: Bookmap 实例（原地修改）。
+        item_id: 知识点 id。
+        mastery_level: MASTERY_LEVELS 的键（mastered/basics/unsure）。
+
+    Returns:
+        更新后的 Item。
+
+    Raises:
+        KeyError: 知识点不存在。
+    """
+    item = bm.get_item(item_id)
+    if item is None:
+        raise KeyError(f"知识点不存在: {item_id}")
+
+    level = mastery_level if mastery_level in MASTERY_LEVELS else "basics"
+    new_mastery = MASTERY_LEVELS[level]
+
+    item.mastery = new_mastery
+    if level == "unsure":
+        item.status = "pending"
+        item.next_review = None
+    else:
+        item.status = "learned"
+        days = 7 if level == "mastered" else 3
+        item.next_review = (
+            datetime.now(UTC).date() + timedelta(days=days)
+        ).isoformat()
+
+    logger.info("标记已学: %s (level=%s, mastery=%.2f)", item_id, level, new_mastery)
     return item
