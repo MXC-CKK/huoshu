@@ -29,8 +29,6 @@ from learning_agent.ui.review_engine import (
 
 # ── 常量 ─────────────────────────────────────────────────────────────
 
-BOOKMAP_DIR = Path("/root/projects/learning-agent/bookmap")
-
 
 def main() -> None:
     """Streamlit 复习页入口。"""
@@ -148,11 +146,13 @@ def _render_sidebar() -> None:
 
 
 def _bookmap_selector() -> Bookmap | None:
-    """渲染图谱选择器。"""
-    candidates = sorted(
-        p for p in BOOKMAP_DIR.glob("*.json")
-        if not p.name.endswith(".bak") and not p.name.endswith(".bak2")
-    ) if BOOKMAP_DIR.exists() else []
+    """渲染图谱选择器（多目录合并扫描）。"""
+    from learning_agent.ui.bookmap_selector import format_bookmap_label, list_bookmap_files
+
+    found = list_bookmap_files()
+    candidates = [p for p, _ in found]
+    source_dirs = {str(p): d for p, d in found}
+    multi_dir = len({str(d) for _, d in found}) > 1
 
     if not candidates:
         st.warning("未找到图谱")
@@ -161,7 +161,9 @@ def _bookmap_selector() -> Bookmap | None:
     selected = st.selectbox(
         "选择图谱",
         options=[str(c) for c in candidates],
-        format_func=lambda s: Path(s).stem,
+        format_func=lambda s: format_bookmap_label(
+            Path(s), source_dirs.get(str(Path(s)), Path(s).parent), multi_dir=multi_dir
+        ),
         key="review_bookmap_sel",
     )
     if not selected:
