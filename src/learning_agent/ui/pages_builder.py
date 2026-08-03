@@ -168,6 +168,12 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
     if failed:
         st.warning(f"⚠️ {len(failed)} 个章节抽取失败: {'; '.join(failed)}")
 
+    # ── 自动保存草稿（生成即落盘，刷新/断连不丢；图谱页立即可见）──
+    auto_path = _auto_save_draft(bookmap, pdf_path)
+    st.success(f"💾 已自动保存草稿到 `{auto_path}`（无需手动保存，可直接去「📊 知识图谱」页查看）")
+    st.session_state["generated_bookmap"] = bookmap
+    st.session_state["generated_stats"] = stats
+
     # ── 校验 ──
     st.subheader("🔍 Schema 校验")
     try:
@@ -331,6 +337,40 @@ def _render_estimate(pdf_path: Path, llm_config: Any) -> None:
         f"当前模型每条约 {per_call}，全程约 {total}。"
         f"生成过程会实时显示进度，无需担心卡住。"
     )
+
+
+def _auto_save_draft(bookmap: dict[str, Any], pdf_path: Path) -> Path:
+    """生成后自动保存草稿到 bookmap 目录（幂等，同名追加序号）。
+
+    防止用户忘记手动保存 / 页面刷新导致 session_state 丢失。
+
+    Args:
+        bookmap: 生成的图谱字典。
+        pdf_path: 来源 PDF 路径（用于默认文件名）。
+
+    Returns:
+        实际写入的文件路径。
+    """
+    import json
+
+    from learning_agent.build.graph_builder import resolve_bookmap_dir
+
+    save_dir = resolve_bookmap_dir()
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = _sanitize_save_name(pdf_path.stem)
+    dest = save_dir / f"{safe_name}.json"
+    counter = 1
+    while dest.exists():
+        dest = save_dir / f"{safe_name}-{counter}.json"
+        counter += 1
+
+    dest.write_text(
+        json.dumps(bookmap, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(f"[pages_builder] 自动保存草稿: {dest}")
+    return dest
 
 
 def _sanitize_save_name(name: str) -> str:
