@@ -417,23 +417,17 @@ def extract_items(
         知识点列表（dict 含 id/title/type/mode/note/source 字段）。
     """
     prompt = (
-        f"你正在分析教材章节「{cluster_title}」。请从以下文本中提取所有原子知识点。\n\n"
-        "## 原子性三标准（每个知识点必须满足）\n"
-        "- **Atomic**：不能或不应再分为更小的子知识点（学生要么掌握、要么没有）\n"
-        "- **Assessable**：能针对它出一道独立的测试题\n"
-        "- **Meaningful**：是真正的知识点（定义、定理、方法、概念），不是琐碎碎片\n\n"
-        "## 字段说明\n"
-        f"- id: \"{prefix}-序号\"（如 {prefix}-1）\n"
-        '- type: 从以下选择 → definition(定义) / concept(概念机制) / theorem(定理证明) / '
-        "method(方法算法) / example(例子) / application(应用) / exercise(习题)\n"
-        "- mode: 定理/核心机制 → whitebox（需深入理解）；定义/工具/应用例 → blackbox（会用即可）\n"
-        "- source: 教材锚点（页码范围），格式如「第X章 pp.Y-Z」\n"
-        "- note: 一句话要点（助记，可选）\n\n"
-        "## 输出格式\n"
-        '输出 JSON 数组（不要 Markdown 围栏）:\n'
-        '[{"id": "...", "title": "...", "type": "...", "mode": "...", "source": "...", "note": "..."}, ...]\n\n'
-        f"## 输出要求\n最多输出 {MAX_ITEMS_PER_CALL} 个最重要的知识点。若本段知识点更多，只输出最重要的 {MAX_ITEMS_PER_CALL} 个（其余会在后续分段继续抽取）。\n\n"
-        f"## 教材文本\n{chunk_text[:MAX_EXTRACT_CHARS]}"
+        f"从教材章节「{cluster_title}」的文本提取原子知识点，输出 JSON 数组:\n"
+        '[{"id": "...", "title": "...", "type": "...", "mode": "...", '
+        '"source": "...", "note": "..."}]\n\n'
+        "规则:\n"
+        f'- id: "{prefix}-序号"（如 {prefix}-1）\n'
+        "- type: definition/concept/theorem/method/example/application/exercise\n"
+        "- mode: theorem/核心机制→whitebox；定义/工具/应用例→blackbox\n"
+        "- source: 页码锚点（如 pp.Y-Z）\n"
+        "- 每个知识点必须：不能再分、能独立出题、是真知识点\n"
+        f"- 最多输出 {MAX_ITEMS_PER_CALL} 个最重要的\n\n"
+        f"教材文本:\n{chunk_text[:MAX_EXTRACT_CHARS]}"
     )
 
     raw = _call_llm_json(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=4096)
