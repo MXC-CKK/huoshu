@@ -71,18 +71,16 @@ def _inject_global_css() -> None:
         background-color: #F5F5F5 !important;
     }
 
-    /* ===== 主按钮圆角 + hover 过渡 ===== */
+    /* ===== 主按钮圆角 + hover 过渡（不用 transform，避免渲染 bug）===== */
     .stButton > button[kind="primary"] {
         border-radius: 8px !important;
-        transition: all 0.2s ease !important;
+        transition: box-shadow 0.2s ease !important;
     }
     .stButton > button[kind="primary"]:hover {
-        transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(99,102,241,.3);
     }
     .stButton > button {
         border-radius: 8px !important;
-        transition: all 0.2s ease !important;
     }
 
     /* ===== Metric 卡片化 ===== */
@@ -310,11 +308,10 @@ def home_main() -> None:
                             box-shadow: 0 1px 3px rgba(0,0,0,.06);
                             text-align: center;
                             margin-bottom: 0.5rem;
-                            transition: all 0.2s ease;
+                            transition: box-shadow 0.2s ease;
                         }
                         :hover {
                             box-shadow: 0 4px 12px rgba(99,102,241,.15);
-                            transform: translateY(-2px);
                         }
                     """,
                 ):
