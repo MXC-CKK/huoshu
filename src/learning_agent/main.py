@@ -180,6 +180,24 @@ def _aggregate_cross_bookmap_stats() -> dict[str, int]:
     }
 
 
+# ── 全局页面注册表（首页卡片跳转用）──────────────────────────────────
+
+# url_path → st.Page 对象；由 _build_app() 填充
+_PAGES_BY_URL: dict[str, Any] = {}
+
+
+def _switch_to_page(url_path: str) -> None:
+    """按 url_path 跳转到已注册的函数式页面。
+
+    函数式页面（st.Page(func)）没有对应文件路径，必须传 Page 对象。
+    """
+    target = _PAGES_BY_URL.get(url_path)
+    if target is None:
+        st.error(f"页面不存在: {url_path}")
+        return
+    st.switch_page(target)
+
+
 # ── 首页视图 ───────────────────────────────────────────────────────────
 
 
@@ -295,7 +313,7 @@ def home_main() -> None:
                     key=f"home_enter_{entry['page']}",
                     use_container_width=True,
                 ):
-                    st.switch_page(f"pages/{entry['page']}.py")
+                    _switch_to_page(entry["page"])
 
 
 def _build_app() -> None:
@@ -329,6 +347,10 @@ def _build_app() -> None:
         st.Page(review_main, title="间隔复习", icon="🔁", url_path="review"),
         st.Page(settings_main, title="模型设置", icon="⚙️", url_path="settings"),
     ]
+
+    # 注册页面对象供首页卡片跳转
+    for page in pages:
+        _PAGES_BY_URL[page.url_path] = page
 
     st.navigation(pages).run()
 

@@ -27,23 +27,98 @@ from learning_agent.ui.graph_renderer import (
 )
 
 st: Any = importlib.import_module("streamlit") if importlib.util.find_spec("streamlit") else None
-agraph: Any = None
-Node: Any = None
-Edge: Any = None
-Config: Any = None
-if st is not None:
-    try:
-        _agraph_mod = importlib.import_module("streamlit_agraph")
-        agraph = _agraph_mod.agraph
-        Node = _agraph_mod.Node
-        Edge = _agraph_mod.Edge
-        Config = _agraph_mod.Config
-    except Exception:  # noqa: BLE001 - 降级：无 agraph 仅影响图谱渲染
-        agraph = None
 
 # ── 常量 ─────────────────────────────────────────────────────────────
 
 DEFAULT_GRAPH_HEIGHT = 600
+
+# vis-network CDN（渲染图谱用；components.v1.html 内联 srcdoc，规避
+# streamlit-agraph 在 st.navigation 子路径下 iframe websocket 失败的兼容 bug）
+VIS_NETWORK_CDN = (
+    "https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"
+)
+
+
+# ── vis-network HTML 构建（纯函数，可测） ─────────────────────────────
+
+
+def build_vis_html(layout: GraphLayout, *, height: int = DEFAULT_GRAPH_HEIGHT) -> str:
+    """将 GraphLayout 序列化为 vis-network HTML 文档（components.v1.html 渲染）。
+
+    用 vis-network 替代 streamlit-agraph：内联 srcdoc 不依赖
+    streamlitUrl websocket，在 st.navigation 子路径页面下可正常渲染。
+    点击节点 → 更新 URL query (?node=...) → Streamlit 重载后详情面板联动。
+
+    Args:
+        layout: build_graph() 的 GraphLayout。
+        height: 画布高度（px）。
+
+    Returns:
+        完整 HTML 文档字符串。
+    """
+    import json
+
+    nodes_json = json.dumps(
+        [
+            {
+                "id": n.id,
+                "label": n.label,
+                "title": n.title,
+                "color": {"background": n.color, "border": n.border_color},
+                "borderWidth": n.border_width,
+                "shape": n.shape,
+                "size": n.size,
+                "group": n.group,
+                "font": {"color": n.font_color, "size": 12},
+            }
+            for n in layout.nodes
+        ],
+        ensure_ascii=False,
+    )
+    edges_json = json.dumps(
+        [
+            {
+                "from": e.source,
+                "to": e.target,
+                "label": e.label or "",
+                "dashes": e.dashes,
+                "color": {"color": e.color},
+                "arrows": {"to": {"enabled": bool(e.arrows)}} if e.arrows else None,
+            }
+            for e in layout.edges
+        ],
+        ensure_ascii=False,
+    )
+    options_json = json.dumps(layout.options, ensure_ascii=False)
+
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="{VIS_NETWORK_CDN}"></script>
+<style>
+  html, body {{ margin: 0; padding: 0; }}
+  #network {{ width: 100%; height: {height}px; }}
+</style>
+</head>
+<body>
+<div id="network"></div>
+<script>
+  const nodes = new vis.DataSet({nodes_json});
+  const edges = new vis.DataSet({edges_json});
+  const container = document.getElementById('network');
+  const options = {options_json};
+  const network = new vis.Network(container, {{nodes, edges}}, options);
+  network.on('click', function (params) {{
+    if (params.nodes && params.nodes.length > 0) {{
+      const url = new URL(window.location.href);
+      url.searchParams.set('node', params.nodes[0]);
+      window.location.href = url.toString();
+    }}
+  }});
+</script>
+</body>
+</html>"""
 
 
 # ── 页面入口 ─────────────────────────────────────────────────────────
@@ -159,6 +234,20 @@ def main() -> None:
         _render_detail_panel(bm)
 
 
+# ── vis-network 渲染 ─────────────────────────────────────────────────
+
+
+def _render_graph(layout: GraphLayout) -> None:
+    """用 vis-network（components.v1.html 内联）渲染图谱。
+
+    替代 streamlit-agraph：修复 st.navigation 子路径页面下
+    组件 iframe websocket 连接失败导致的图谱空白问题。
+    """
+    from streamlit.components.v1 import html
+
+    html(build_vis_html(layout), height=DEFAULT_GRAPH_HEIGHT)
+
+
 # ── 文件选择器 ───────────────────────────────────────────────────────
 
 
@@ -218,80 +307,31 @@ def _render_file_selector() -> tuple[Bookmap | None, Path | None]:
         return None, None
 
 
-# ── 图谱渲染 ─────────────────────────────────────────────────────────
-
-
-def _render_graph(layout: GraphLayout) -> str | None:
-    """用 streamlit-agraph 渲染 vis.js 图谱。
-
-    Args:
-        layout: GraphLayout 含 nodes, edges, options。
-
-    Returns:
-        用户在图中点击的节点 ID（None 表示未点击）。
-    """
-    if agraph is None:
-        st.error("streamlit-agraph 未安装")
-        return None
-
-    # 转换 nodes
-    agraph_nodes: list[Node] = []
-    for gn in layout.nodes:
-        node = Node(
-            id=gn.id,
-            label=gn.label,
-            title=gn.title,
-            color={"background": gn.color, "border": gn.border_color},
-            borderWidth=gn.border_width,
-            shape=gn.shape,
-            size=gn.size,
-            group=gn.group,
-            font={"color": gn.font_color},
-        )
-        agraph_nodes.append(node)
-
-    # 转换 edges
-    agraph_edges: list[Edge] = []
-    for ge in layout.edges:
-        edge = Edge(
-            source=ge.source,
-            target=ge.target,
-            label=ge.label,
-            arrows=ge.arrows,
-            color={"color": ge.color},
-            dashes=ge.dashes,
-        )
-        agraph_edges.append(edge)
-
-    # 配置
-    config = Config(
-        width="100%",
-        height=DEFAULT_GRAPH_HEIGHT,
-        directed=True,
-        physics=layout.options.get("physics", {}),
-        hierarchical=layout.options.get("layout", {}).get("hierarchical", False),
-        interaction=layout.options.get("interaction", {}),
-    )
-
-    # 渲染并返回选中节点
-    selected = agraph(
-        nodes=agraph_nodes,
-        edges=agraph_edges,
-        config=config,
-    )
-
-    return str(selected) if selected else None
-
-
 # ── 详情面板 ─────────────────────────────────────────────────────────
 
 
 def _render_detail_panel(bm: Bookmap) -> None:
     """渲染右侧详情面板：图谱摘要 + 节点详情。
 
-    节点选择通过 session_state 中的 'selected_node' 键传递。
+    节点选择来源：
+    1. 图谱点击（URL query ?node=<id>，vis-network 联动）
+    2. 搜索选择（session_state 的 'selected_node'）
     """
     st.header("📋 节点详情")
+
+    # 图谱点击联动：URL query ?node=<id>
+    clicked_id = st.query_params.get("node")
+    if clicked_id:
+        target = bm.get_item(clicked_id)
+        if target is not None:
+            st.caption(f"👆 图谱点击: **{target.title}**")
+            _show_item_detail(bm, clicked_id)
+            st.divider()
+        # 清理 query param，避免刷新后重复展示
+        try:
+            del st.query_params["node"]
+        except Exception:  # noqa: BLE001, S110 - query_params 删除失败不影响页面
+            pass
 
     # 搜索节点
     search = st.text_input("🔍 搜索知识点", placeholder="输入标题或 ID...")

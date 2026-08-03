@@ -16,6 +16,7 @@ from learning_agent.ui.graph_renderer import (
     build_graph,
     build_node_detail,
 )
+from learning_agent.ui.pages_graph import build_vis_html
 
 # ── 测试夹具 ─────────────────────────────────────────────────────────
 
@@ -361,3 +362,66 @@ def _parse_hex(hex_color: str) -> tuple[int, int, int]:
     """解析 #RRGGBB 为 (R, G, B)。"""
     h = hex_color.lstrip("#")
     return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+
+
+# ── build_vis_html（vis-network 内联渲染替代 agraph） ────────────────
+
+
+class TestBuildVisHtml:
+    """build_vis_html 序列化正确性。"""
+
+    def _make_layout(self) -> GraphLayout:
+        return GraphLayout(
+            nodes=[
+                GraphNode(
+                    id="ch1-1", label="知识点A", title="<b>知识点A</b>",
+                    color="#6366F1", border_color="#4338CA", border_width=3,
+                    shape="box", size=30, group="cluster", font_color="#FFFFFF",
+                ),
+                GraphNode(
+                    id="ch1-2", label="知识点B", title="知识点B",
+                    color="#10B981", border_color="#059669", border_width=1,
+                    shape="ellipse", size=25, group="cluster", font_color="#333333",
+                ),
+            ],
+            edges=[
+                GraphEdge(source="ch1-1", target="ch1-2", label="", dashes=False,
+                          color="#666666", arrows="to"),
+                GraphEdge(source="ch1-2", target="ch1-1", label="相关", dashes=True,
+                          color="#999999", arrows=""),
+            ],
+            options={"physics": {"enabled": True}},
+        )
+
+    def test_contains_nodes_and_edges(self) -> None:
+        html_doc = build_vis_html(self._make_layout())
+        assert "ch1-1" in html_doc
+        assert "知识点A" in html_doc
+        assert "ch1-2" in html_doc
+        assert "知识点B" in html_doc
+        assert "vis-network@9.1.9" in html_doc
+
+    def test_contains_click_linkage(self) -> None:
+        """点击节点 → URL query 联动逻辑存在。"""
+        html_doc = build_vis_html(self._make_layout())
+        assert "searchParams.set" in html_doc
+        assert "network.on('click'" in html_doc
+
+    def test_edge_attributes(self) -> None:
+        """实线箭头边与虚线相关边正确序列化。"""
+        html_doc = build_vis_html(self._make_layout())
+        assert '"dashes": true' in html_doc
+        assert '"dashes": false' in html_doc
+        assert "arrows" in html_doc
+
+    def test_options_serialized(self) -> None:
+        """layout.options 完整序列化（physics 配置）。"""
+        html_doc = build_vis_html(self._make_layout())
+        assert '"enabled": true' in html_doc
+
+    def test_html_structure(self) -> None:
+        """HTML 文档结构完整（DOCTYPE/script/容器）。"""
+        html_doc = build_vis_html(self._make_layout())
+        assert html_doc.startswith("<!DOCTYPE html>")
+        assert '<div id="network">' in html_doc
+        assert "</html>" in html_doc

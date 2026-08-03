@@ -71,6 +71,8 @@ warn_unused_ignores = true
 module = [
     "streamlit_agraph.*",
     "chromadb.*",
+    "streamlit_shadcn_ui.*",
+    "streamlit_extras.*",
 ]
 ignore_missing_imports = true
 
