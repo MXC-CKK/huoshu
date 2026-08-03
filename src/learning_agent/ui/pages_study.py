@@ -429,8 +429,8 @@ def _render_question_area(bm: Bookmap, session: StudySession, item: Any) -> None
         }.get(t, t),
     )
 
-    # Socratic 提示
-    prompt = generate_socratic_prompt(item, qtype, llm_available=False)
+    # Socratic 提示（真实判断 LLM 可用性，可用时展示 AI 引导）
+    prompt = generate_socratic_prompt(item, qtype, llm_available=is_llm_available())
     st.info(prompt)
 
     # 回答输入

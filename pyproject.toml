@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "learning-agent"
-version = "0.1.14"
+version = "0.1.15"
 description = "活书 huoshu — 知识图谱 × 自适应学习 × RAG × 复习闭环"
 readme = "README.md"
 license = { text = "MIT" }
