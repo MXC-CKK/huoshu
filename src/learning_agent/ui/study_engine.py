@@ -699,3 +699,136 @@ def ask_llm(
         f"> ⚠️ LLM 不可用，当前为模板化回复。\n"
         f"> 设置 LLM_PROVIDER 和 LLM_API_KEY 环境变量以启用 AI 教学。"
     )
+
+
+# ── 补充知识点（学习时图谱增量完善） ─────────────────────────────────
+
+
+def extract_new_item(
+    llm: Any,
+    title: str,
+    description: str,
+    *,
+    current_item: Item | None = None,
+) -> dict[str, Any]:
+    """LLM 抽取新知识点的结构化字段（学习会话中补充图谱）。
+
+    Args:
+        llm: LLMClient 实例。
+        title: 用户输入的新知识点标题（必填）。
+        description: 用户补充描述（可为空字符串）。
+        current_item: 当前学习中的知识点（用于推断关系与锚点）。
+
+    Returns:
+        {"title", "type", "mode", "note", "source", "relation"}。
+        relation ∈ {"prerequisite", "extension", "independent"}：
+        prerequisite = 新知识点是当前知识点的前置；extension = 延伸/相关；independent = 独立。
+
+    Raises:
+        RuntimeError: LLM 不可用或输出解析失败。
+    """
+    current_title = current_item.title if current_item else ""
+    current_source = current_item.source if current_item else ""
+    desc_line = f"用户描述: {description}" if description.strip() else "用户未提供描述"
+
+    prompt = (
+        f"为知识点「{title}」补全结构化字段，输出 JSON 对象:\n"
+        '{"type": "...", "mode": "...", "note": "...", "source": "...", "relation": "..."}\n\n'
+        "规则:\n"
+        "- type: definition/concept/theorem/method/example/application/exercise\n"
+        "- mode: theorem/核心机制→whitebox；其余→blackbox\n"
+        "- note: 一句话要点（≤40字）\n"
+        "- source: 若与当前知识点同源则沿用其锚点，否则 \"学习补充\"\n"
+        f"- relation: 与「{current_title}」的关系 → prerequisite(它是前置)/extension(延伸相关)/independent(独立)\n"
+        f"- {desc_line}；只依据用户描述与教材锚点，不编造内容\n\n"
+        f"当前知识点: {current_title}（锚点: {current_source}）"
+    )
+
+    from learning_agent.build.graph_builder import _SYSTEM_JSON_PROMPT, _call_llm_json
+
+    raw = _call_llm_json(llm, _SYSTEM_JSON_PROMPT, prompt, max_tokens=1024)
+    if not isinstance(raw, dict):
+        raise TypeError(f"新知识点抽取期望 JSON 对象，实际: {type(raw).__name__}")
+
+    item_type = str(raw.get("type", "concept"))
+    if item_type not in {
+        "definition", "concept", "theorem", "method",
+        "example", "application", "section", "exercise",
+    }:
+        item_type = "concept"
+
+    mode = str(raw.get("mode", "blackbox"))
+    if mode not in {"whitebox", "blackbox"}:
+        mode = "blackbox"
+
+    relation = str(raw.get("relation", "independent"))
+    if relation not in {"prerequisite", "extension", "independent"}:
+        relation = "independent"
+
+    return {
+        "title": str(raw.get("title", title)).strip() or title,
+        "type": item_type,
+        "mode": mode,
+        "note": str(raw.get("note", "")).strip() or None,
+        "source": str(raw.get("source", "学习补充")).strip() or "学习补充",
+        "relation": relation,
+    }
+
+
+def add_item_to_bookmap(
+    bm: Bookmap,
+    item_data: dict[str, Any],
+    *,
+    current_item_id: str = "",
+) -> Item:
+    """将新知识点加入 Bookmap 并连边（纯逻辑，原地修改，可测）。
+
+    Args:
+        bm: Bookmap 实例（原地修改）。
+        item_data: extract_new_item 返回的字段字典。
+        current_item_id: 当前学习知识点 id（用于 relation 连边）。
+
+    Returns:
+        新增的 Item。
+    """
+    # 生成唯一 id: ext-1, ext-2, ...
+    n = 1
+    while f"ext-{n}" in bm.items:
+        n += 1
+    new_id = f"ext-{n}"
+
+    # cluster 跟随当前知识点（保持同章归属）
+    cluster = "ch1"
+    if current_item_id and current_item_id in bm.items:
+        cluster = bm.items[current_item_id].cluster
+
+    relation = item_data.get("relation", "independent")
+    prereqs: list[str] = []
+    related: list[str] = []
+    if relation == "prerequisite" and current_item_id and current_item_id in bm.items:
+        # 新知识点是当前知识点的前置 → 新节点无前置，当前节点增加前置边
+        if new_id not in bm.items[current_item_id].prerequisites:
+            bm.items[current_item_id].prerequisites.append(new_id)
+    elif relation == "extension" and current_item_id and current_item_id in bm.items:
+        related.append(current_item_id)
+        if new_id not in bm.items[current_item_id].related:
+            bm.items[current_item_id].related.append(new_id)
+
+    item = Item(
+        id=new_id,
+        cluster=cluster,
+        title=item_data.get("title", ""),
+        type=item_data.get("type", "concept"),
+        mode=item_data.get("mode", "blackbox"),
+        source=item_data.get("source", "学习补充"),
+        prerequisites=prereqs,
+        related=related,
+        note=item_data.get("note") or None,
+        mastery=0.0,
+        next_review=None,
+        status="pending",
+        cross_refs=[],
+    )
+    bm.items[new_id] = item
+    logger.info("已补充知识点 %s（relation=%s）到图谱", new_id, relation)
+    return item

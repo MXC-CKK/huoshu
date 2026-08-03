@@ -53,6 +53,11 @@ _CHAPTER_RE = re.compile(
     r"\d+[\.\s]+[A-Z一-鿿])",
 )
 
+# 章级别标题判定（用于过滤 LLM 误提取的节标题）
+_CHAPTER_TITLE_RE = re.compile(
+    r"第[一二三四五六七八九十百\d]+章|[Cc]hapter\s*\d+|[Uu]nit\s*\d+"
+)
+
 # LLM 系统提示：强调 JSON 格式约束
 # ⚠️ 实测：提示词越啰嗦，推理模型（deepseek-v4-flash）思考越长，
 # 可能耗尽思考预算返回空内容（finish=length）。必须保持精简直接。
@@ -367,10 +372,11 @@ def extract_clusters(text: str, llm: Any) -> list[dict[str, str]]:
     prompt = (
         "请从以下教材目录/前言文本中提取所有章节（章级别）。\n\n"
         "要求:\n"
-        "1. 只提取章级别（Chapter），不要节级别\n"
-        "2. id 使用 ch1, ch2, ... 格式\n"
-        "3. title 保留原文完整标题（含编号）\n"
-        '4. 按章节顺序输出 JSON 数组: [{"id": "ch1", "title": "..."}, ...]\n\n'
+        "1. 只提取章级别（第X章 / Chapter X / Unit X），不要节级别（如 6.1、Section 6.1）\n"
+        "2. 如果文本中没有章级别标题，输出空数组 []\n"
+        "3. id 使用 ch1, ch2, ... 格式\n"
+        "4. title 保留原文完整标题（含编号）\n"
+        '5. 按章节顺序输出 JSON 数组: [{"id": "ch1", "title": "..."}, ...]\n\n'
         f"教材文本:\n{text[:DEFAULT_CLUSTER_SCAN_CHARS]}"
     )
 
@@ -380,13 +386,16 @@ def extract_clusters(text: str, llm: Any) -> list[dict[str, str]]:
     if not isinstance(result, list):
         raise TypeError(f"extract_clusters 期望 JSON 数组，实际: {type(result).__name__}")
 
-    # 校验并补全
+    # 校验并补全：只保留章级别标题（过滤节级别误提取，如 "6.1 Motivation"）
     clusters: list[dict[str, str]] = []
     for i, item in enumerate(result):
         if not isinstance(item, dict):
             continue
         cid = str(item.get("id", f"ch{i + 1}"))
         title = str(item.get("title", f"第{i + 1}章"))
+        if not _CHAPTER_TITLE_RE.search(title):
+            logger.warning("跳过疑似节级别标题（非章）: %s", title)
+            continue
         clusters.append({"id": cid, "title": title})
 
     logger.info("抽取了 %d 个章节", len(clusters))
@@ -676,6 +685,12 @@ def _split_chapters(
                 preamble += match_text + after_text
             continue
 
+        # 同一簇标题重复出现（目录/页眉/正文引用）→ 合并进当前簇，
+        # 避免反复切分导致同一章节被抽取多次
+        if current_cluster is not None and matched_cluster is current_cluster:
+            current_text_parts.append(match_text + after_text)
+            continue
+
         # 保存上一个簇的结果
         if current_cluster is not None:
             result.append((current_cluster, "".join(current_text_parts)))
@@ -777,13 +792,19 @@ def build_bookmap_from_pdf(
     for idx, (cluster, chunk_text) in enumerate(chapter_chunks):
         cluster_id = cluster["id"]
         cluster_title = cluster["title"]
-        if progress:
-            progress(f"抽取知识点: {cluster_title}", idx + 1, len(chapter_chunks))
 
         # 单章 >4000 字符按节再切（保证每次 LLM 调用输入在可靠区间）
         sub_chunks = _split_subsections(chunk_text, max_chars=MAX_EXTRACT_CHARS)
 
         for sub_idx, sub_text in enumerate(sub_chunks):
+            if progress:
+                if len(sub_chunks) > 1:
+                    progress(
+                        f"抽取知识点: {cluster_title}（{sub_idx + 1}/{len(sub_chunks)}）",
+                        idx + 1, len(chapter_chunks),
+                    )
+                else:
+                    progress(f"抽取知识点: {cluster_title}", idx + 1, len(chapter_chunks))
             try:
                 items = extract_items(
                     cluster_title=cluster_title,

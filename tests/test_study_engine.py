@@ -10,8 +10,10 @@ from learning_agent.core.graph import Bookmap
 from learning_agent.ui.study_engine import (
     StudySession,
     ThreeColumn,
+    add_item_to_bookmap,
     classify_question,
     compute_three_column,
+    extract_new_item,
     generate_socratic_prompt,
     get_navigation_context,
     get_sources,
@@ -402,3 +404,138 @@ class TestNavigationContext:
         nav = get_navigation_context(sample_bm, "c")
         rel_ids = [r.id for r in nav.related]
         assert "a" in rel_ids
+
+
+# ── 补充知识点（学习时图谱增量完善） ─────────────────────────────────
+
+
+class FakeLLM:
+    """最小 LLM 替身：chat 返回预设 JSON 文本。"""
+
+    def __init__(self, response: str) -> None:
+        self.response = response
+
+    def chat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+        return self.response
+
+
+class TestAddItemToBookmap:
+    """add_item_to_bookmap 纯逻辑测试。"""
+
+    def test_prerequisite_relation(self, sample_bm: Bookmap) -> None:
+        """relation=prerequisite：新节点成为当前节点的前置边。"""
+        item = add_item_to_bookmap(
+            sample_bm,
+            {"title": "GLS 估计量", "type": "method", "mode": "blackbox",
+             "source": "学习补充", "relation": "prerequisite"},
+            current_item_id="b",
+        )
+        assert item.id == "ext-1"
+        assert item.cluster == "c01"  # 跟随当前节点 b 的簇
+        assert item.prerequisites == []
+        assert "ext-1" in sample_bm.items["b"].prerequisites
+
+    def test_extension_relation(self, sample_bm: Bookmap) -> None:
+        """relation=extension：双向 related 边。"""
+        item = add_item_to_bookmap(
+            sample_bm,
+            {"title": "相关概念", "type": "concept", "mode": "blackbox",
+             "source": "学习补充", "relation": "extension"},
+            current_item_id="b",
+        )
+        assert item.related == ["b"]
+        assert "ext-1" in sample_bm.items["b"].related
+
+    def test_independent_relation(self, sample_bm: Bookmap) -> None:
+        """relation=independent：孤立新节点。"""
+        item = add_item_to_bookmap(
+            sample_bm,
+            {"title": "独立概念", "type": "definition", "mode": "whitebox",
+             "source": "学习补充", "relation": "independent"},
+            current_item_id="b",
+        )
+        assert item.prerequisites == []
+        assert item.related == []
+        assert "ext-1" not in sample_bm.items["b"].prerequisites
+
+    def test_id_increments(self, sample_bm: Bookmap) -> None:
+        """连续添加生成 ext-1, ext-2。"""
+        add_item_to_bookmap(
+            sample_bm,
+            {"title": "A", "type": "concept", "mode": "blackbox",
+             "source": "学习补充", "relation": "independent"},
+        )
+        item2 = add_item_to_bookmap(
+            sample_bm,
+            {"title": "B", "type": "concept", "mode": "blackbox",
+             "source": "学习补充", "relation": "independent"},
+        )
+        assert item2.id == "ext-2"
+
+    def test_cluster_follows_current(self, sample_bm: Bookmap) -> None:
+        """当前节点在 c02 时新节点归入 c02。"""
+        item = add_item_to_bookmap(
+            sample_bm,
+            {"title": "C", "type": "concept", "mode": "blackbox",
+             "source": "学习补充", "relation": "independent"},
+            current_item_id="c",  # c 在 c02
+        )
+        assert item.cluster == "c02"
+
+
+class TestExtractNewItem:
+    """extract_new_item LLM 抽取（FakeLLM 替身）。"""
+
+    def test_valid_json(self) -> None:
+        """LLM 返回合法 JSON 时字段正确解析。"""
+        llm = FakeLLM(
+            '{"type": "method", "mode": "blackbox", "note": "异方差下的有效估计", '
+            '"source": "学习补充", "relation": "prerequisite"}'
+        )
+        result = extract_new_item(
+            llm, "GLS 估计量", "当扰动项存在异方差时，GLS 比 OLS 更有效",
+            current_item=sample_bm_stub(),
+        )
+        assert result["type"] == "method"
+        assert result["mode"] == "blackbox"
+        assert result["relation"] == "prerequisite"
+        assert result["note"] == "异方差下的有效估计"
+        assert result["title"] == "GLS 估计量"
+
+    def test_invalid_type_falls_back(self) -> None:
+        """非法 type 回退 concept。"""
+        llm = FakeLLM(
+            '{"type": "nonsense", "mode": "blackbox", "note": "", '
+            '"source": "学习补充", "relation": "weird"}'
+        )
+        result = extract_new_item(llm, "X", "")
+        assert result["type"] == "concept"
+        assert result["relation"] == "independent"
+        assert result["note"] is None
+
+    def test_empty_title_falls_back_to_input(self) -> None:
+        """LLM 返回空标题时用用户输入。"""
+        llm = FakeLLM(
+            '{"type": "concept", "mode": "blackbox", "note": null, '
+            '"source": "", "relation": "independent"}'
+        )
+        result = extract_new_item(llm, "用户给的标题", "")
+        assert result["title"] == "用户给的标题"
+        assert result["source"] == "学习补充"
+
+    def test_llm_failure_raises(self) -> None:
+        """LLM 输出无法解析时抛 RuntimeError。"""
+
+        class BrokenLLM:
+            def chat(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
+                return "不是 JSON"
+
+        with pytest.raises(RuntimeError):
+            extract_new_item(BrokenLLM(), "X", "")
+
+
+def sample_bm_stub() -> Any:
+    """最小 current_item 替身（仅需 title/source 属性）。"""
+    from types import SimpleNamespace
+
+    return SimpleNamespace(title="中心极限定理", source="§1.2")

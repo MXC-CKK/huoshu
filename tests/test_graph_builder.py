@@ -179,11 +179,33 @@ class TestExtractClusters:
         """缺失 id 时自动补全。"""
         mock_llm = MagicMock()
         mock_llm.chat.return_value = json.dumps([
-            {"title": "First chapter"},
+            {"title": "Chapter 1"},
         ])
         result = extract_clusters("text", mock_llm)
         assert result[0]["id"] == "ch1"
-        assert result[0]["title"] == "First chapter"
+        assert result[0]["title"] == "Chapter 1"
+
+    def test_filters_section_level_titles(self) -> None:
+        """节级别标题（6.1 / Section 6.1）被过滤，不当作章。"""
+        mock_llm = MagicMock()
+        mock_llm.chat.return_value = json.dumps([
+            {"id": "ch1", "title": "6.1 Motivation"},
+            {"id": "ch2", "title": "Section 6.2 Framework"},
+            {"id": "ch3", "title": "第一章 绪论"},
+        ])
+        result = extract_clusters("text", mock_llm)
+        assert len(result) == 1
+        assert result[0]["title"] == "第一章 绪论"
+
+    def test_all_section_level_returns_empty(self) -> None:
+        """全部是节级别标题时返回空列表（调用方降级为单簇）。"""
+        mock_llm = MagicMock()
+        mock_llm.chat.return_value = json.dumps([
+            {"title": "6.1 Motivation"},
+            {"title": "6.2 Framework"},
+        ])
+        result = extract_clusters("text", mock_llm)
+        assert result == []
 
     def test_raises_on_non_list(self) -> None:
         """LLM 返回非数组时抛出 ValueError。"""

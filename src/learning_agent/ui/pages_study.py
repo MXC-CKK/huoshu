@@ -22,10 +22,13 @@ st: Any = importlib.import_module("streamlit") if importlib.util.find_spec("stre
 
 from learning_agent.core.graph import Bookmap
 from learning_agent.llm import is_llm_available
+from learning_agent.ui.bookmap_selector import format_bookmap_label, list_bookmap_files
 from learning_agent.ui.study_engine import (
     StudySession,
+    add_item_to_bookmap,
     ask_llm,
     compute_three_column,
+    extract_new_item,
     generate_socratic_prompt,
     get_navigation_context,
     locate_item,
@@ -34,8 +37,6 @@ from learning_agent.ui.study_engine import (
 )
 
 # ── 常量 ─────────────────────────────────────────────────────────────
-
-BOOKMAP_DIR = Path("/root/projects/learning-agent/bookmap")
 
 if "study_session" not in locals():
     study_session: StudySession | None = None
@@ -90,9 +91,12 @@ def _init_state() -> None:
     """初始化 session_state。"""
     defaults: dict[str, Any] = {
         "bookmap": None,
+        "bookmap_path": None,
         "study_session": None,
         "chat_history": [],
         "selected_item_id": "",
+        "show_question_input": False,
+        "show_progress": False,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -140,11 +144,12 @@ def _render_sidebar() -> None:
 
 
 def _bookmap_selector() -> Bookmap | None:
-    """渲染 bookmap 文件选择器。"""
-    candidates = sorted(
-        p for p in BOOKMAP_DIR.glob("*.json")
-        if not p.name.endswith(".bak") and not p.name.endswith(".bak2")
-    ) if BOOKMAP_DIR.exists() else []
+    """渲染 bookmap 文件选择器（多目录合并扫描）。"""
+
+    found = list_bookmap_files()
+    candidates = [p for p, _ in found]
+    source_dirs = {str(p): d for p, d in found}
+    multi_dir = len({str(d) for _, d in found}) > 1
 
     if not candidates:
         st.warning("未找到图谱文件")
@@ -157,7 +162,9 @@ def _bookmap_selector() -> Bookmap | None:
     selected = st.selectbox(
         "选择图谱",
         options=[str(c) for c in candidates],
-        format_func=lambda s: Path(s).stem,
+        format_func=lambda s: format_bookmap_label(
+            Path(s), source_dirs.get(str(Path(s)), Path(s).parent), multi_dir=multi_dir
+        ),
         key="bookmap_selector",
     )
 
@@ -166,6 +173,7 @@ def _bookmap_selector() -> Bookmap | None:
 
     try:
         bm = Bookmap.load(Path(selected))
+        st.session_state.bookmap_path = Path(selected)
         if not bm.is_valid and bm.errors:
             with st.expander(f"⚠️ {len(bm.errors)} 个校验警告"):
                 for e in bm.errors:
@@ -308,6 +316,10 @@ def _render_main_area(bm: Bookmap, session: StudySession) -> None:
             st.session_state.study_session = None
             st.rerun()
 
+    # ── 补充知识点（学习时图谱增量完善）──
+    with st.expander("➕ 补充新知识点（加入图谱）", expanded=False):
+        _render_add_item_area(bm, session, item)
+
     # ── 提问区域 ──
     if st.session_state.get("show_question_input"):
         _render_question_area(bm, session, item)
@@ -320,6 +332,84 @@ def _render_main_area(bm: Bookmap, session: StudySession) -> None:
             role = "🧑" if msg["role"] == "user" else "🤖"
             with st.chat_message(role):
                 st.markdown(msg["content"])
+
+
+def _render_add_item_area(bm: Bookmap, session: StudySession, item: Any) -> None:
+    """渲染「补充新知识点」区域：学习会话中增量完善知识图谱。
+
+    流程: 输入标题+描述 → LLM 抽取结构化字段 → 加入图谱 → 保存回文件。
+    这样开始只需建基础图谱，学习过程中随时补充完善。
+    """
+    from learning_agent.llm import LLMClient
+
+    st.caption(
+        f"学习到新概念？补充进图谱，它会成为可导航的知识点（与「{item.title}」关联）。"
+    )
+
+    col_title, col_rel = st.columns([3, 2])
+    with col_title:
+        new_title = st.text_input(
+            "新知识点名称",
+            placeholder="如：GLS 估计量 / 平稳性定义 / 中心极限定理",
+            key="new_item_title",
+        )
+    with col_rel:
+        relation = st.radio(
+            "与当前知识点的关系",
+            options=["prerequisite", "extension", "independent"],
+            format_func=lambda r: {
+                "prerequisite": "🔙 它是前置知识",
+                "extension": "🔗 延伸/相关",
+                "independent": "🧩 独立补充",
+            }.get(r, r),
+            key="new_item_relation",
+        )
+
+    new_desc = st.text_area(
+        "一句话描述（可选，帮助 AI 归类）",
+        placeholder="如：当扰动项存在异方差时，GLS 比 OLS 更有效",
+        key="new_item_desc",
+        height=60,
+    )
+
+    if st.button("✨ 生成并加入图谱", type="primary", disabled=not new_title.strip(), key="add_item_btn"):
+        try:
+            client = LLMClient.from_env()
+            if not client.available:
+                st.error("LLM 未配置，无法生成新知识点。请先到「⚙️ 模型设置」配置。")
+                return
+
+            with st.spinner("🤖 AI 正在抽取知识点结构..."):
+                item_data = extract_new_item(
+                    client,
+                    new_title.strip(),
+                    new_desc,
+                    current_item=item,
+                )
+                # 用户选择的关系优先（LLM 推断仅作参考）
+                item_data["relation"] = relation
+                new_item = add_item_to_bookmap(
+                    bm, item_data, current_item_id=session.current_item_id
+                )
+
+            # 保存回图谱文件
+            bm_path = st.session_state.get("bookmap_path")
+            if bm_path is not None:
+                bm.save(bm_path)
+                saved_note = f"已保存到 `{bm_path}`"
+            else:
+                saved_note = "⚠️ 未找到图谱文件路径，本次修改未落盘（刷新后丢失）"
+
+            st.success(
+                f"✅ 新知识点「{new_item.title}」已加入图谱（`{new_item.id}`，"
+                f"类型: {new_item.type}，模式: {new_item.mode}）。{saved_note}"
+            )
+            st.caption("刷新后可在「📊 知识图谱」页看到新节点。")
+        except Exception as exc:  # noqa: BLE001 - UI 层兜底
+            st.error(f"补充失败: {exc}")
+            st.caption(
+                "💡 建议：① 到「⚙️ 模型设置」确认模型配置；② 简化描述后重试。"
+            )
 
 
 def _render_question_area(bm: Bookmap, session: StudySession, item: Any) -> None:

@@ -58,6 +58,9 @@ def main() -> None:
         )
         return
 
+    # ── 推理模型警告（建图谱极慢，建议切换非推理模型）──
+    _render_model_hint(llm_config)
+
     # ── PDF 选择 ──
     st.subheader("📂 选择教材")
 
@@ -80,6 +83,10 @@ def main() -> None:
                 "请先到「📖 教材检索」页上传 PDF。"
             )
             selected_pdf = None
+
+    # ── 生成前预估（调用次数 + 预计时间）──
+    if selected_pdf is not None:
+        _render_estimate(selected_pdf, llm_config)
 
     with col_goal:
         goal = st.radio(
@@ -112,7 +119,7 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
     from learning_agent.core.graph import Bookmap
     from learning_agent.llm import LLMClient
 
-    # 进度回调
+    # 进度回调：实时写入 status 容器（用户可见中间进度，不再最后一次性输出）
     progress_messages: list[str] = []
 
     def _progress(stage: str, current: int, total: int) -> None:
@@ -121,22 +128,20 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
         else:
             msg = stage
         progress_messages.append(msg)
+        st.write(f"⏳ {msg}")  # 实时显示（st.status 容器内逐条追加）
 
     # 分阶段展示
     with st.status("🤖 AI 正在分析教材...", expanded=True) as status:
         try:
             client = LLMClient.from_env()
 
-            st.write("📖 解析 PDF 文本...")
+            st.write(f"📖 解析 PDF 文本（模型: `{client.config.model}`）...")
             result = build_bookmap_from_pdf(
                 pdf_path=pdf_path,
                 llm=client,
                 goal=goal,
                 progress=_progress,
             )
-
-            for msg in progress_messages:
-                st.write(f"  ✓ {msg}")
 
             status.update(label="✅ 图谱生成完成！", state="complete")
         except Exception as exc:  # noqa: BLE001 - 生成失败需展示给用户
@@ -152,6 +157,9 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
                 "PDF 文件完整且含章节标题。"
             )
             return
+
+    for msg in progress_messages:
+        st.caption(f"  ✓ {msg}")
 
     bookmap = result["bookmap"]
     stats = result["stats"]
@@ -267,6 +275,62 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
 
     if st.button("💾 保存为图谱", type="primary", use_container_width=True):
         _save_bookmap(save_name)
+
+
+def _render_model_hint(llm_config: Any) -> None:
+    """生成前提示：推理模型建图谱很慢，建议切换非推理模型（可一键切换）。"""
+    from learning_agent.llm import LLMConfig
+
+    model = llm_config.model
+    is_reasoner = (
+        "v4-pro" in model.lower()
+        or "reasoner" in model.lower()
+        or "thinking" in model.lower()
+        or "r1" in model.lower()
+    )
+    if not is_reasoner:
+        return
+
+    st.warning(
+        f"⚠️ 当前模型 `{model}` 是推理模型：每次调用思考时间长，"
+        "建图谱会非常慢。建议切换为 **deepseek-chat**（非推理，快且稳）。"
+    )
+    if st.button("⚡ 一键切换为 deepseek-chat", key="switch_model_btn"):
+        cfg = LLMConfig.from_file()
+        if cfg is not None:
+            cfg.model = "deepseek-chat"
+            cfg.save()
+            st.success("✅ 已切换为 deepseek-chat，请重新点击生成。")
+            st.rerun()
+
+
+def _render_estimate(pdf_path: Path, llm_config: Any) -> None:
+    """根据 PDF 规模估算 LLM 调用次数与预计耗时，透明化等待时间。"""
+    from learning_agent.build.graph_builder import MAX_EXTRACT_CHARS
+    from learning_agent.rag.ingest import extract_pages
+
+    try:
+        pages = extract_pages(pdf_path)
+        total_chars = sum(len(text) for _, text in pages)
+    except Exception:  # noqa: BLE001 - 预估失败不阻塞生成
+        return
+
+    # 目录抽取 1 次 + 子块抽取 N 次 + 边推断 1 次（降级时更少）
+    sub_chunks = max(1, (total_chars + MAX_EXTRACT_CHARS - 1) // MAX_EXTRACT_CHARS)
+    calls = 1 + sub_chunks + 1
+    is_reasoner = (
+        "v4-pro" in llm_config.model.lower()
+        or "reasoner" in llm_config.model.lower()
+    )
+    per_call = "30~90 秒" if is_reasoner else "5~15 秒"
+    total = calls * ("40~120 秒" if is_reasoner else "10~25 秒")
+
+    st.info(
+        f"📊 教材约 {total_chars:,} 字符 / {len(pages)} 页 → 预计 **{calls} 次** LLM 调用"
+        f"（目录 1 + 知识点 {sub_chunks} + 关系 1）。"
+        f"当前模型每条约 {per_call}，全程约 {total}。"
+        f"生成过程会实时显示进度，无需担心卡住。"
+    )
 
 
 def _sanitize_save_name(name: str) -> str:

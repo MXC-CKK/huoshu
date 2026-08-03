@@ -522,3 +522,47 @@ class TestRealBookmaps:
                 assert len(order) == bm.node_count
             except ValueError as e:
                 pytest.fail(f"{path.name} 拓扑排序失败: {e}")
+
+
+# ── Bookmap.to_dict / save 序列化 ────────────────────────────────────
+
+
+class TestBookmapSerialization:
+    """to_dict 往返与 save 落盘测试。"""
+
+    def test_to_dict_roundtrip(self, minimal_bookmap_dict: dict) -> None:
+        """to_dict → from_dict 往返保持结构一致。"""
+        bm = Bookmap.from_dict(minimal_bookmap_dict)
+        restored = Bookmap.from_dict(bm.to_dict())
+
+        assert restored.domain == bm.domain
+        assert restored.meta == bm.meta
+        assert set(restored.items.keys()) == set(bm.items.keys())
+        assert restored.node_count == bm.node_count
+        assert restored.cluster_count == bm.cluster_count
+        assert restored.edge_count == bm.edge_count
+        # 字段级抽查
+        it = restored.items["c01-2"]
+        assert it.title == "Theorem Y"
+        assert it.prerequisites == ["c01-1"]
+        assert it.mastery == 0.2
+
+    def test_save_writes_valid_json(self, minimal_bookmap_dict: dict, tmp_path: Path) -> None:
+        """save 落盘后可用 load 读回且校验通过。"""
+        bm = Bookmap.from_dict(minimal_bookmap_dict)
+        dest = tmp_path / "nested" / "bookmap.json"
+        bm.save(dest)
+
+        assert dest.exists()
+        reloaded = Bookmap.load(dest)
+        assert reloaded.is_valid
+        assert reloaded.node_count == bm.node_count
+
+    def test_save_preserves_item_order(self, minimal_bookmap_dict: dict, tmp_path: Path) -> None:
+        """items 顺序在落盘后保持（图谱显示顺序稳定）。"""
+        bm = Bookmap.from_dict(minimal_bookmap_dict)
+        original_ids = list(bm.items.keys())
+        dest = tmp_path / "bookmap.json"
+        bm.save(dest)
+        reloaded = Bookmap.load(dest)
+        assert list(reloaded.items.keys()) == original_ids

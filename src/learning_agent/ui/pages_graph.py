@@ -16,7 +16,6 @@ from __future__ import annotations
 # ---- Streamlit imports (optional — page usable as module without UI) ----
 import importlib
 import importlib.util
-import os
 from pathlib import Path
 from typing import Any
 
@@ -44,24 +43,6 @@ if st is not None:
 
 # ── 常量 ─────────────────────────────────────────────────────────────
 
-# bookmap 搜索目录：优先环境变量 HUOSHU_BOOKMAP_DIR，其次常见本地目录
-def _default_bookmap_dir() -> Path:
-    """确定默认 bookmap 搜索目录（可被环境变量覆盖）。"""
-    env_dir = os.environ.get("HUOSHU_BOOKMAP_DIR")
-    if env_dir:
-        return Path(env_dir)
-    for candidate in (
-        Path.cwd() / "bookmap",
-        Path.cwd() / "data" / "bookmap",
-        Path.home() / ".huoshu" / "bookmap",
-        Path("/root/projects/learning-agent/bookmap"),  # 开发机默认
-    ):
-        if candidate.exists():
-            return candidate
-    return Path.cwd() / "bookmap"
-
-
-BOOKMAP_DIR = _default_bookmap_dir()
 DEFAULT_GRAPH_HEIGHT = 600
 
 
@@ -158,18 +139,18 @@ def main() -> None:
 
 
 def _render_file_selector() -> tuple[Bookmap | None, Path | None]:
-    """渲染侧边栏的 bookmap 文件选择器。
+    """渲染侧边栏的 bookmap 文件选择器（多目录合并扫描）。
 
     Returns:
         (Bookmap, path) 或 (None, None) 如果未选择/加载失败。
     """
-    # 发现可用 bookmap 文件
-    candidates: list[Path] = []
-    if BOOKMAP_DIR.exists():
-        candidates = sorted(
-            p for p in BOOKMAP_DIR.glob("*.json")
-            if not p.name.endswith(".bak") and not p.name.endswith(".bak2")
-        )
+    from learning_agent.ui.bookmap_selector import format_bookmap_label, list_bookmap_files
+
+    # 发现可用 bookmap 文件（多目录合并：~/.huoshu/bookmap + 历史目录）
+    found = list_bookmap_files()
+    candidates = [p for p, _ in found]
+    source_dirs = {str(p): d for p, d in found}
+    multi_dir = len({str(d) for _, d in found}) > 1
 
     if not candidates:
         st.warning("未找到 bookmap JSON 文件")
@@ -191,7 +172,9 @@ def _render_file_selector() -> tuple[Bookmap | None, Path | None]:
     selected = st.selectbox(
         "选择图谱",
         options=[str(c) for c in candidates],
-        format_func=lambda s: Path(s).stem,
+        format_func=lambda s: format_bookmap_label(
+            Path(s), source_dirs.get(str(Path(s)), Path(s).parent), multi_dir=multi_dir
+        ),
     )
 
     if not selected:

@@ -207,6 +207,64 @@ class Bookmap:
             )
             self.items[item.id] = item
 
+    # ── 序列化 ───────────────────────────────────────────────────
+
+    def to_dict(self) -> dict[str, Any]:
+        """序列化为 bookmap-schema 字典（Bookmap.from_dict 的逆操作）。
+
+        Returns:
+            可直接 json.dumps 的完整图谱字典（meta/domain/clusters/items）。
+        """
+        return {
+            "meta": self.meta,
+            "domain": self.domain,
+            "clusters": {
+                cid: {
+                    "title": c.title,
+                    "learned": c.learned,
+                    "learned_date": c.learned_date,
+                    "parent": c.parent,
+                }
+                for cid, c in self.clusters.items()
+            },
+            "items": [
+                {
+                    "id": it.id,
+                    "cluster": it.cluster,
+                    "title": it.title,
+                    "type": it.type,
+                    "mode": it.mode,
+                    "source": it.source,
+                    "prerequisites": list(it.prerequisites),
+                    "related": list(it.related),
+                    "note": it.note,
+                    "mastery": it.mastery,
+                    "next_review": it.next_review,
+                    "status": it.status,
+                    "cross_refs": list(it.cross_refs),
+                }
+                for it in self.items.values()
+            ],
+        }
+
+    def save(self, path: Path | str) -> Path:
+        """保存到 JSON 文件（含目录自动创建）。
+
+        Args:
+            path: 目标文件路径。
+
+        Returns:
+            实际写入的文件路径。
+        """
+        dest = Path(path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(
+            json.dumps(self.to_dict(), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        logger.info("Bookmap 已保存: %s", dest)
+        return dest
+
     # ── 校验 ─────────────────────────────────────────────────────
 
     def validate(self) -> list[str]:
