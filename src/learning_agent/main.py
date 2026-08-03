@@ -203,7 +203,8 @@ def _switch_to_page(url_path: str) -> None:
 
 def home_main() -> None:
     """首页视图入口（用作 st.Page 的 callable）。"""
-    from streamlit_shadcn_ui import card, metric_card
+    from streamlit_extras.stylable_container import stylable_container
+    from streamlit_shadcn_ui import metric_card
 
     # ── Hero 区 ──
     st.markdown(
@@ -296,18 +297,41 @@ def home_main() -> None:
         cols = st.columns(row_size)
         for i, entry in enumerate(entries[row_start : row_start + row_size]):
             with cols[i]:
-                card_content = (
-                    f'<div style="text-align:center; padding: 0.5rem 0;">'
-                    f'<div style="font-size:2rem;">{entry["icon"]}</div>'
-                    f'<p style="color:#6B7280; font-size:0.85rem; margin:0.5rem 0 0 0;">'
-                    f'{entry["desc"]}</p></div>'
-                )
-                card(
-                    title=entry["title"],
-                    content=card_content,
-                    description="",
+                # 用 stylable_container + markdown 渲染卡片：
+                # shadcn card 的 content 是纯文本 prop，传 HTML 会显示原始代码
+                with stylable_container(
                     key=f"home_card_{entry['page']}",
-                )
+                    css_styles="""
+                        {
+                            background: #FFFFFF;
+                            border: 1px solid #E5E7EB;
+                            border-radius: 12px;
+                            padding: 1.25rem 1rem;
+                            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+                            text-align: center;
+                            margin-bottom: 0.5rem;
+                            transition: all 0.2s ease;
+                        }
+                        :hover {
+                            box-shadow: 0 4px 12px rgba(99,102,241,.15);
+                            transform: translateY(-2px);
+                        }
+                    """,
+                ):
+                    st.markdown(
+                        f"<div style='font-size:2rem; line-height:1.2;'>{entry['icon']}</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<div style='font-weight:600; color:#1F2937; "
+                        f"font-size:1rem; margin:0.4rem 0 0.2rem 0;'>{entry['title']}</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown(
+                        f"<div style='color:#6B7280; font-size:0.85rem; line-height:1.5;'>"
+                        f"{entry['desc']}</div>",
+                        unsafe_allow_html=True,
+                    )
                 if st.button(
                     f"进入 {entry['title']}",
                     key=f"home_enter_{entry['page']}",
