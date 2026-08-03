@@ -9,7 +9,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/learning-agent.svg)](https://pypi.org/project/learning-agent/)
 [![CI](https://github.com/MXC-CKK/huoshu/actions/workflows/pytest.yml/badge.svg)](https://github.com/MXC-CKK/huoshu/actions)
-[![Tests](https://img.shields.io/badge/tests-364%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-401%20passed-brightgreen.svg)](tests/)
 
 > 📖 **新手上路？先看 [使用教程](docs/使用教程.md)** — 5 分钟上手 + 完整功能指南 + 配置参考 + 常见问题
 
@@ -29,16 +29,17 @@
 
 ---
 
-## ✨ 功能
+## ✨ 功能（V1.0）
 
 | 模块 | 功能 |
 |------|------|
-| 🤖 **AI 建图谱** | 上传教材 → LLM 自动抽取知识图谱（章节/知识点/依赖边），校对后保存 |
-| 📊 **知识图谱可视化** | 交互式 vis.js 图谱，白箱蓝色/黑箱琥珀色，掌握度热力边框，点击节点查看详情 |
-| 📖 **学习会话** | 图谱导航（下钻/返回）、Socratic LLM 问答、三栏迷航（已完成/剩余/推荐） |
-| 📖 **教材检索** | PDF 入库 → ChromaDB 向量化 → 自然语言检索，返回原文段落 + 精确页码（CLI + Web UI） |
+| 🏠 **首页** | 跨图谱统计（已建图谱/知识点/已学）+ 六功能入口卡片，一键直达 |
+| 🤖 **AI 建图谱** | 上传教材 → LLM 自动抽取知识图谱（章节/知识点/依赖边），实时进度 + 调用量预估，生成即自动保存草稿，校对后保存 |
+| 📊 **知识图谱可视化** | 多图谱切换，vis-network 交互图谱，白箱蓝色/黑箱琥珀色，掌握度热力边框，点击节点查看详情 |
+| 📖 **学习会话** | 图谱导航（下钻/返回）、Socratic LLM 问答、三栏迷航（已完成/剩余/推荐）、自评标记已学推进进度、对话中补充新知识点完善图谱 |
+| 📖 **教材检索** | PDF 拖拽上传即入库 → ChromaDB 向量化 → 自然语言检索，返回原文段落 + 精确页码 |
 | 🔁 **间隔复习** | 到期知识点自适应出题（基础/理解/应用），答题后自动更新掌握度并重排复习日期 |
-| ⚙️ **模型设置** | DeepSeek / OpenAI / Ollama 统一配置：API Key、Base URL、代理、温度，保存即生效 |
+| ⚙️ **模型设置** | DeepSeek / OpenAI / Ollama 统一配置：API Key、模型（推荐 deepseek-chat）、Base URL、代理、温度，保存即生效 |
 
 ---
 
