@@ -585,3 +585,31 @@ class TestMarkItemLearned:
         tc = compute_three_column(sample_bm)
         completed_ids = [it.id for it, _ in tc.completed]
         assert "b" in completed_ids
+
+
+# ── 推荐列表去重 ─────────────────────────────────────────────────────
+
+
+class TestRecommendedDeduplication:
+    """推荐列表无重复节点（防 UI 按钮 key 冲突）。"""
+
+    def test_no_duplicate_when_dependent_also_ready(
+        self, sample_bm: Bookmap,
+    ) -> None:
+        """后置节点同时前置就绪时，推荐列表只出现一次。
+
+        sample_bm: a(pending, 无前置) → b(前置=[a]) → c(前置=[b])。
+        标记 a 已学后：b 前置就绪进入 ready_pending；
+        current=a 时 b 又是后置节点 → 修复前重复，修复后唯一。
+        """
+        mark_item_learned(sample_bm, "a", "mastered")
+        tc = compute_three_column(sample_bm, current_item_id="a")
+        ids = [it.id for it, _ in tc.recommended]
+        assert len(ids) == len(set(ids)), f"推荐列表有重复: {ids}"
+
+    def test_recommended_always_unique(self, sample_bm: Bookmap) -> None:
+        """多种推荐来源混合下仍保持唯一。"""
+        mark_item_learned(sample_bm, "a", "mastered")
+        tc = compute_three_column(sample_bm, current_item_id="a")
+        ids = [it.id for it, _ in tc.recommended]
+        assert len(ids) == len(set(ids))

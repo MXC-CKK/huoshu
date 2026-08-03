@@ -493,7 +493,19 @@ def compute_three_column(
         dependents = [it for it in bm.all_items() if current_item_id in it.prerequisites]
         for dep in dependents:
             if dep.status == "pending":
+                # 去重：后置节点可能已在前置就绪推荐中（同一节点只出现一次）
+                if any(it.id == dep.id for it, _ in recommended):
+                    continue
                 recommended.insert(0, (dep, f"← 接着 {current_item_id} 继续"))
+
+    # 兜底去重（保序保留首个 reason），防止 UI 按钮 key 冲突
+    seen_ids: set[str] = set()
+    deduped: list[tuple[Item, str]] = []
+    for it, reason in recommended:
+        if it.id not in seen_ids:
+            seen_ids.add(it.id)
+            deduped.append((it, reason))
+    recommended = deduped
 
     return ThreeColumn(
         completed=completed[:max_per_column],
