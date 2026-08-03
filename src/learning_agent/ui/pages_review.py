@@ -117,15 +117,23 @@ def _render_sidebar() -> None:
             return
 
         st.caption(f"共 {len(due)} 个到期项")
+        from streamlit_shadcn_ui import progress as shadcn_progress
 
-        for item in due:
+        # 显示到期项概览进度条（以最大会话数衡量）
+        session_cap = min(len(due), MAX_ITEMS_PER_SESSION)
+        shadcn_progress(value=session_cap / max(len(due), 1), key="due_progress", show_value=False)
+        st.caption(f"本场可复习 {session_cap}/{len(due)} 个到期项")
+
+        for item in due[:10]:
             mastery_emoji = "🟢" if item.mastery >= 0.8 else "🟡" if item.mastery >= 0.5 else "🟠"
             st.caption(
                 f"{mastery_emoji} **{item.title}** "
                 f"(掌握度 {item.mastery:.0%}, 复习日 {item.next_review})"
             )
+        if len(due) > 10:
+            st.caption(f"... 还有 {len(due) - 10} 项")
 
-        if st.button(f"🚀 开始复习 ({min(len(due), MAX_ITEMS_PER_SESSION)} 题)", type="primary"):
+        if st.button(f"🚀 开始复习 ({session_cap} 题)", type="primary"):
             questions = engine.generate_all_questions()
             st.session_state.review_questions = questions
             st.session_state.current_question_idx = 0
@@ -135,7 +143,12 @@ def _render_sidebar() -> None:
         # 复习进行中
         idx = st.session_state.current_question_idx
         total = len(st.session_state.review_questions)
-        st.metric("进度", f"{idx}/{total}")
+
+        from streamlit_shadcn_ui import progress as shadcn_progress
+
+        if total > 0:
+            shadcn_progress(value=idx / total, key="review_progress", show_value=True)
+            st.caption(f"进度: {idx}/{total}")
 
         if idx >= total and not st.session_state.review_done:
             st.session_state.review_done = True
@@ -258,14 +271,19 @@ def _render_results_panel(engine: ReviewEngine) -> None:
 
     # 历史汇总
     if engine.results:
+        from streamlit_shadcn_ui import metric_card as rmc
+
         st.divider()
         st.subheader("📋 本次汇总")
         summary = engine.summarize()
-        st.metric("已复习", f"{summary.reviewed}/{summary.total_due}")
+        rmc(label="已复习", value=f"{summary.reviewed}/{summary.total_due}", delta="", key="result_reviewed")
         c1, c2, c3 = st.columns(3)
-        c1.metric("✅", summary.correct)
-        c2.metric("⚠️", summary.partial)
-        c3.metric("❌", summary.incorrect)
+        with c1:
+            rmc(label="✅ 正确", value=summary.correct, delta="", key="result_correct")
+        with c2:
+            rmc(label="⚠️ 部分", value=summary.partial, delta="", key="result_partial")
+        with c3:
+            rmc(label="❌ 错误", value=summary.incorrect, delta="", key="result_incorrect")
 
 
 def _render_summary(engine: ReviewEngine) -> None:
@@ -280,13 +298,27 @@ def _render_summary(engine: ReviewEngine) -> None:
     weak = [r for r in engine.results if r.score < 0.4]
     if weak:
         st.divider()
-        st.subheader("⚠️ 需要回炉的知识点")
-        for w in weak:
-            st.markdown(
-                f"- **{w.question.item_title}** "
-                f"(掌握度 {w.mastery_before:.0%} → {w.mastery_after:.0%})\n"
-                f"  📖 请复习教材: {w.question.source_anchor}"
-            )
+        from streamlit_extras.stylable_container import stylable_container
+
+        with stylable_container(
+            key="review_weak_card",
+            css_styles="""
+                .review-weak-card {
+                    background: #FFFFFF;
+                    border-radius: 12px;
+                    padding: 1rem 1.25rem;
+                    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+                    border-left: 4px solid #EF4444;
+                }
+            """,
+        ):
+            st.subheader("⚠️ 需要回炉的知识点")
+            for w in weak:
+                st.markdown(
+                    f"- **{w.question.item_title}** "
+                    f"(掌握度 {w.mastery_before:.0%} → {w.mastery_after:.0%})\n"
+                    f"  📖 请复习教材: {w.question.source_anchor}"
+                )
 
     if st.button("🔄 开始新一轮复习"):
         _reset_review()

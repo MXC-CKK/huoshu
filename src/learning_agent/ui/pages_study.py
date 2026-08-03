@@ -230,13 +230,15 @@ def _render_welcome(bm: Bookmap, session: StudySession | None) -> None:
 
     # 三栏预览
     tc = compute_three_column(bm)
+    from streamlit_shadcn_ui import metric_card as mc
+
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("已完成", len(tc.completed))
+        mc(label="✅ 已完成", value=len(tc.completed), delta="", key="welcome_completed")
     with col2:
-        st.metric("剩余", len(tc.remaining))
+        mc(label="📋 剩余", value=len(tc.remaining), delta="", key="welcome_remaining")
     with col3:
-        st.metric("推荐", len(tc.recommended))
+        mc(label="⭐ 推荐", value=len(tc.recommended), delta="", key="welcome_recommended")
 
     st.divider()
 
@@ -284,6 +286,7 @@ def _render_main_area(bm: Bookmap, session: StudySession) -> None:
     _render_breadcrumb(bm, session)
 
     # 知识点卡片
+
     with st.container(border=True):
         st.subheader(f"📌 {item.title}")
         cols = st.columns(3)
@@ -344,6 +347,8 @@ def _render_mark_learned_area(bm: Bookmap, session: StudySession, item: Any) -> 
     标记后 status/mastery/next_review 更新并保存回图谱文件，
     侧边栏三栏与推荐列表随即推进到下一个可学知识点。
     """
+    from streamlit_shadcn_ui import badge as sbadge
+
     from learning_agent.ui.study_engine import MASTERY_LEVELS, mark_item_learned
 
     st.divider()
@@ -352,6 +357,14 @@ def _render_mark_learned_area(bm: Bookmap, session: StudySession, item: Any) -> 
             f"学完了「{item.title}」？标记学习状态即可推进到下一个知识点"
             "（会更新图谱并保存）。"
         )
+        # 掌握度 badge 预览
+        _mb1, _mb2, _mb3 = st.columns(3)
+        with _mb1:
+            sbadge("✅ 掌握了 (0.8)", key="badge_mastered", variant="default")
+        with _mb2:
+            sbadge("🟡 基本掌握 (0.6)", key="badge_basics", variant="outline")
+        with _mb3:
+            sbadge("🔴 还不熟 (0.3)", key="badge_unsure", variant="secondary")
         level = st.radio(
             "自评掌握度",
             options=list(MASTERY_LEVELS.keys()),

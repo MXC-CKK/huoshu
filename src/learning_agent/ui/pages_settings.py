@@ -251,22 +251,31 @@ def main() -> None:
     st.subheader("📋 当前配置")
     file_cfg = LLMConfig.from_file()
     env_cfg = LLMConfig.from_env()
+
+    from streamlit_shadcn_ui import alert
+
     col_a, col_b = st.columns(2)
     with col_a:
         if file_cfg is not None:
-            st.info(
-                f"**生效来源**：配置文件（~/.huoshu/config.json）\n\n"
-                f"- 提供商：`{file_cfg.provider}`\n"
-                f"- 模型：`{file_cfg.model}`\n"
-                f"- Base URL：`{file_cfg.base_url}`\n"
-                f"- API Key：{'已设置' if file_cfg.api_key else '未设置'}"
+            alert(
+                title="生效来源：配置文件",
+                description=(
+                    f"~/.huoshu/config.json — "
+                    f"`{file_cfg.provider}` / `{file_cfg.model}`"
+                    f" · API Key: {'已设置' if file_cfg.api_key else '未设置'}"
+                ),
+                variant="default",
+                key="cfg_alert",
             )
         else:
-            st.info(
-                f"**生效来源**：环境变量 / 默认值\n\n"
-                f"- 提供商：`{env_cfg.provider}`\n"
-                f"- 模型：`{env_cfg.model}`\n"
-                f"- API Key：{'已设置' if env_cfg.api_key else '未设置（学习会话将使用模板回复）'}"
+            alert(
+                title="生效来源：环境变量 / 默认值",
+                description=(
+                    f"`{env_cfg.provider}` / `{env_cfg.model}`"
+                    f" · API Key: {'已设置' if env_cfg.api_key else '未设置（学习会话将使用模板回复）'}"
+                ),
+                variant="default",
+                key="cfg_alert",
             )
     with col_b:
         st.caption("🔒 隐私说明")

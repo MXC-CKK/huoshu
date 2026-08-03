@@ -61,6 +61,7 @@ def main() -> None:
         layout="wide",
     )
     st.title("📊 知识图谱")
+    st.caption("白箱=深入理解 · 黑箱=会用即可 · 边框粗细=掌握度")
 
     # ── 侧边栏 ──
     with st.sidebar:
@@ -96,9 +97,6 @@ def main() -> None:
             format_func=lambda cid: f"{cid}: {bm.clusters[cid].title}",
         )
 
-        st.divider()
-        st.caption(f"节点: {bm.node_count} | 簇: {bm.cluster_count} | 边: {bm.edge_count}")
-
     # ── 构建过滤参数 ──
     mode_filter: set[str] = set()
     if show_whitebox:
@@ -125,7 +123,33 @@ def main() -> None:
         cluster_filter=cluster_filter,
     )
 
-    # ── 主区域两栏：图谱 + 详情 ──
+    # ── 主区域：顶部统计 + 图例 + 两栏（图谱 + 详情）──
+    from streamlit_shadcn_ui import badge, metric_card
+
+    # 顶部统计卡片
+    summary = bm.summary()
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        metric_card(label="🧩 知识点", value=summary["node_count"], delta="", key="graph_mc_nodes")
+    with c2:
+        metric_card(label="📂 章节/簇", value=summary["cluster_count"], delta="", key="graph_mc_clusters")
+    with c3:
+        metric_card(label="🔗 边", value=summary["edge_count"], delta="", key="graph_mc_edges")
+
+    # 图例区（badge）
+    st.caption("")
+    bc1, bc2, bc3, bc4 = st.columns(4)
+    with bc1:
+        badge("🔬 白箱", key="badge_whitebox", variant="default")
+    with bc2:
+        badge("🔧 黑箱", key="badge_blackbox", variant="outline")
+    with bc3:
+        badge("📖 待学", key="badge_pending", variant="secondary")
+    with bc4:
+        badge("✅ 已学", key="badge_learned", variant="outline")
+
+    st.divider()
+
     col_graph, col_detail = st.columns([3, 1])
 
     with col_graph:
@@ -269,20 +293,6 @@ def _render_detail_panel(bm: Bookmap) -> None:
     """
     st.header("📋 节点详情")
 
-    # 图例
-    with st.expander("🎨 图例", expanded=False):
-        cols = st.columns(2)
-        with cols[0]:
-            st.markdown("🟦 **蓝色** = 白箱 · 深入理解")
-            st.markdown("🟨 **琥珀** = 黑箱 · 会用即可")
-            st.markdown("⬜ **灰色** = 待学/选学")
-        with cols[1]:
-            st.markdown("▬ **实线** = 前置依赖")
-            st.markdown("┅ **虚线** = 相关概念")
-            st.markdown("🔲 **边框粗** = 掌握度高")
-
-    st.divider()
-
     # 搜索节点
     search = st.text_input("🔍 搜索知识点", placeholder="输入标题或 ID...")
     if search:
@@ -307,9 +317,6 @@ def _render_detail_panel(bm: Bookmap) -> None:
         # 图谱总览
         st.subheader("📊 图谱总览")
         summary = bm.summary()
-        st.metric("知识点", summary["node_count"])
-        st.metric("章节/簇", summary["cluster_count"])
-        st.metric("边 (前置+相关)", summary["edge_count"])
 
         # 模式分布
         md = summary.get("mode_distribution", {})

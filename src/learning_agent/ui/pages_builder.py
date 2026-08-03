@@ -62,55 +62,68 @@ def main() -> None:
     _render_model_hint(llm_config)
 
     # ── PDF 选择 ──
-    st.subheader("📂 选择教材")
+    from streamlit_extras.stylable_container import stylable_container
 
-    pdf_dir = resolve_pdf_dir()
-    pdf_files = list_pdf_files(pdf_dir)
+    with stylable_container(
+        key="builder_pdf_card",
+        css_styles="""
+            .builder-pdf-card {
+                background: #FFFFFF;
+                border-radius: 12px;
+                padding: 1.25rem;
+                box-shadow: 0 1px 3px rgba(0,0,0,.06);
+                margin-bottom: 1rem;
+            }
+        """,
+    ):
+        st.subheader("📂 选择教材")
 
-    col_pdf, col_goal = st.columns([2, 1])
-    with col_pdf:
-        if pdf_files:
-            pdf_options = {p.name: p for p in pdf_files}
-            selected_name = st.selectbox(
-                "选择 PDF 文件",
-                options=list(pdf_options.keys()),
-                help="从 PDF 目录中选择教材",
+        pdf_dir = resolve_pdf_dir()
+        pdf_files = list_pdf_files(pdf_dir)
+
+        col_pdf, col_goal = st.columns([2, 1])
+        with col_pdf:
+            if pdf_files:
+                pdf_options = {p.name: p for p in pdf_files}
+                selected_name = st.selectbox(
+                    "选择 PDF 文件",
+                    options=list(pdf_options.keys()),
+                    help="从 PDF 目录中选择教材",
+                )
+                selected_pdf: Path | None = pdf_options[selected_name]
+            else:
+                st.info(
+                    f"PDF 目录 `{pdf_dir}` 中尚无文件。"
+                    "请先到「📖 教材检索」页上传 PDF。"
+                )
+                selected_pdf = None
+
+        # ── 生成前预估（调用次数 + 预计时间）──
+        if selected_pdf is not None:
+            _render_estimate(selected_pdf, llm_config)
+
+        with col_goal:
+            goal = st.radio(
+                "学习目标（可选）",
+                options=["", "考试复习", "系统读懂", "快速应用"],
+                format_func=lambda g: {
+                    "": "📚 不指定",
+                    "考试复习": "📝 考试复习",
+                    "系统读懂": "🔬 系统读懂",
+                    "快速应用": "⚡ 快速应用",
+                }.get(g, g),
+                help="影响 AI 抽取知识点的粒度偏好",
             )
-            selected_pdf: Path | None = pdf_options[selected_name]
-        else:
-            st.info(
-                f"PDF 目录 `{pdf_dir}` 中尚无文件。"
-                "请先到「📖 教材检索」页上传 PDF。"
-            )
-            selected_pdf = None
 
-    # ── 生成前预估（调用次数 + 预计时间）──
-    if selected_pdf is not None:
-        _render_estimate(selected_pdf, llm_config)
+        # ── 生成按钮 ──
+        gen_disabled = selected_pdf is None
 
-    with col_goal:
-        goal = st.radio(
-            "学习目标（可选）",
-            options=["", "考试复习", "系统读懂", "快速应用"],
-            format_func=lambda g: {
-                "": "📚 不指定",
-                "考试复习": "📝 考试复习",
-                "系统读懂": "🔬 系统读懂",
-                "快速应用": "⚡ 快速应用",
-            }.get(g, g),
-            help="影响 AI 抽取知识点的粒度偏好",
-        )
+        if st.button("🤖 AI 生成知识图谱", type="primary", disabled=gen_disabled, use_container_width=True):
+            if selected_pdf is None:
+                st.error("请先选择 PDF 文件")
+                return
 
-    # ── 生成按钮 ──
-    st.divider()
-    gen_disabled = selected_pdf is None
-
-    if st.button("🤖 AI 生成知识图谱", type="primary", disabled=gen_disabled, use_container_width=True):
-        if selected_pdf is None:
-            st.error("请先选择 PDF 文件")
-            return
-
-        _run_generation(selected_pdf, goal)
+            _run_generation(selected_pdf, goal)
 
 
 def _run_generation(pdf_path: Path, goal: str) -> None:
@@ -188,17 +201,19 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
         st.error(f"❌ 图谱结构无效: {exc}")
 
     # ── 统计卡片 ──
+    from streamlit_shadcn_ui import metric_card as mc
+
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        st.metric("📚 章节", stats["clusters"])
+        mc(label="📚 章节", value=stats["clusters"], delta="", key="stat_chapters")
     with col2:
-        st.metric("🧩 知识点", stats["items"])
+        mc(label="🧩 知识点", value=stats["items"], delta="", key="stat_items")
     with col3:
-        st.metric("🔗 依赖边", stats["edges"])
+        mc(label="🔗 依赖边", value=stats["edges"], delta="", key="stat_edges")
     with col4:
-        st.metric("🔬 白箱", stats["whitebox"])
+        mc(label="🔬 白箱", value=stats["whitebox"], delta="", key="stat_whitebox")
     with col5:
-        st.metric("🔧 黑箱", stats["blackbox"])
+        mc(label="🔧 黑箱", value=stats["blackbox"], delta="", key="stat_blackbox")
 
     # ── 校对区 ──
     st.divider()
@@ -285,6 +300,8 @@ def _run_generation(pdf_path: Path, goal: str) -> None:
 
 def _render_model_hint(llm_config: Any) -> None:
     """生成前提示：推理模型建图谱很慢，建议切换非推理模型（可一键切换）。"""
+    from streamlit_shadcn_ui import alert
+
     from learning_agent.llm import LLMConfig
 
     model = llm_config.model
@@ -297,9 +314,14 @@ def _render_model_hint(llm_config: Any) -> None:
     if not is_reasoner:
         return
 
-    st.warning(
-        f"⚠️ 当前模型 `{model}` 是推理模型：每次调用思考时间长，"
-        "建图谱会非常慢。建议切换为 **deepseek-chat**（非推理，快且稳）。"
+    alert(
+        title="⚠️ 推理模型警告",
+        description=(
+            f"当前模型 `{model}` 是推理模型：每次调用思考时间长，"
+            "建图谱会非常慢。建议切换为 **deepseek-chat**（非推理，快且稳）。"
+        ),
+        variant="destructive",
+        key="reasoner_alert",
     )
     if st.button("⚡ 一键切换为 deepseek-chat", key="switch_model_btn"):
         cfg = LLMConfig.from_file()

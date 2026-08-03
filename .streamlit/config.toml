@@ -1,0 +1,12 @@
+[theme]
+primaryColor = "#6366F1"
+backgroundColor = "#FAFAFA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#1F2937"
+font = "sans-serif"
+
+[server]
+# 保持默认，不动
+
+[browser]
+# 保持默认，不动

@@ -533,14 +533,16 @@ def _render_manage_tab(config: dict[str, Any]) -> None:
                 ollama_url=config.get("ollama_url"),
             )
             stats = collection_stats(collection)
+            from streamlit_shadcn_ui import metric_card as smc
+
             col_a, col_b, col_c = st.columns(3)
             with col_a:
-                st.metric("名称", stats["name"])
+                smc(label="名称", value=stats["name"], delta="", key="mgmt_name")
             with col_b:
-                st.metric("文档数", stats["count"])
+                smc(label="文档数", value=stats["count"], delta="", key="mgmt_count")
             with col_c:
                 hnsw = stats.get("metadata", {})
-                st.metric("距离度量", hnsw.get("hnsw:space", "cosine") if hnsw else "cosine")
+                smc(label="距离度量", value=hnsw.get("hnsw:space", "cosine") if hnsw else "cosine", delta="", key="mgmt_metric")
         except Exception as exc:  # noqa: BLE001 - 无法打开集合需展示
             st.warning(f"⚠️ 无法打开集合: {exc}")
 
